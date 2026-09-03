@@ -212,6 +212,12 @@
   .close-btn{background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink-soft);line-height:1}
   .drawer-body{flex:1;overflow-y:auto;padding:16px 22px}
   .empty-cart{text-align:center;color:var(--ink-soft);font-size:13.5px;padding:60px 10px;line-height:1.7}
+  .confirm-points{
+    margin:20px auto 0;padding:18px 24px;border-radius:14px;background:var(--green-night);color:#fff;
+    display:inline-flex;flex-direction:column;align-items:center;gap:2px;
+  }
+  .confirm-points-val{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:800;color:var(--orange)}
+  .confirm-points-label{font-size:11px;color:#B9C9BC}
   .cart-line{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
   .cart-line-main{flex:1;min-width:0}
   .cart-line-name{font-weight:700;font-size:13.5px;margin-bottom:2px}
@@ -957,18 +963,19 @@ function leaveLoyalty(){
 }
 /* Credits points server-side for a given loyalty code (used at checkout —
    works even for a code typed manually, not just the locally logged-in
-   profile). Returns the amount earned, or 0 if it couldn't be credited. */
+   profile). Returns { earned, total } (total = new points balance on the
+   card), or null if it couldn't be credited. */
 async function creditLoyaltyPoints(code, total){
-  if(!sb || !code) return 0;
+  if(!sb || !code) return null;
   const earned = Math.floor(total / 100);
-  if(earned <= 0) return 0;
+  if(earned <= 0) return null;
   try{
     const { data, error } = await sb.rpc('add_loyalty_points', { p_code: code, p_amount: earned });
-    if(error) return 0;
+    if(error) return null;
     const profile = loadLoyalty();
     if(profile && profile.code === code){ profile.points = data; saveLoyalty(profile); renderLoyalty(); }
-    return earned;
-  }catch(e){ return 0; }
+    return { earned, total: data };
+  }catch(e){ return null; }
 }
 function renderLoyalty(){
   const profile = loadLoyalty();
@@ -1154,10 +1161,12 @@ async function sendWhatsApp(){
   msg += `\n*Total : ${fmt(cartTotal())}*\n`;
   if(note) msg += `\nNote : ${note}\n`;
 
+  const orderTotal = cartTotal();
+  let credit = null;
   if(loyaltyCode){
-    const earned = await creditLoyaltyPoints(loyaltyCode, cartTotal());
-    msg += earned > 0
-      ? `\n*Carte fidélité :* ${loyaltyCode} (+${earned} pts)\n`
+    credit = await creditLoyaltyPoints(loyaltyCode, orderTotal);
+    msg += credit
+      ? `\n*Carte fidélité :* ${loyaltyCode} (+${credit.earned} pts, total ${credit.total} pts)\n`
       : `\n*Carte fidélité :* ${loyaltyCode}\n`;
   }
 
@@ -1165,6 +1174,32 @@ async function sendWhatsApp(){
 
   const url = `https://wa.me/22891072125?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
+
+  showOrderConfirmation(orderTotal, loyaltyCode, credit);
+  cart = [];
+  updateCartUI();
+}
+
+/* Shown right after the WhatsApp tab opens, so the client sees their
+   updated loyalty balance immediately instead of having to go check the
+   loyalty panel separately. */
+function showOrderConfirmation(orderTotal, loyaltyCode, credit){
+  const body = document.getElementById('drawerBody');
+  const foot = document.getElementById('drawerFoot');
+  body.innerHTML = `
+    <div class="empty-cart">
+      <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:8px">Commande envoyée !</div>
+      <div>Total : ${fmt(orderTotal)}</div>
+      ${credit ? `
+        <div class="confirm-points">
+          <div class="confirm-points-val">${credit.total} pts</div>
+          <div class="confirm-points-label">+${credit.earned} pts · carte ${loyaltyCode}</div>
+        </div>
+      ` : ''}
+      <div style="margin-top:14px;font-size:12px">Confirmez l'envoi du message sur WhatsApp pour finaliser votre commande.</div>
+    </div>
+  `;
+  foot.innerHTML = `<button class="btn-primary" style="width:100%;text-align:center" onclick="closeCart()">Fermer</button>`;
 }
 
 /* Best-effort: record the order in Supabase so it shows up in the admin dashboard.
