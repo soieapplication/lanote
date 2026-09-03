@@ -159,8 +159,8 @@
     <h1>Espace Admin</h1>
     <p>Connectez-vous pour gérer les commandes, le menu, le stock et les rapports de ventes.</p>
     <div class="field">
-      <label>E-mail</label>
-      <input type="email" id="loginEmail" placeholder="vous@lanotegourmande.com" autocomplete="username">
+      <label>Code PIN (6 chiffres)</label>
+      <input type="text" id="loginPin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••••" autocomplete="username">
     </div>
     <div class="field">
       <label>Mot de passe</label>
@@ -213,16 +213,23 @@ function showToast(msg){
 
 /* ===================== AUTH ===================== */
 async function doLogin(){
-  const email = document.getElementById('loginEmail').value.trim();
+  const pin = document.getElementById('loginPin').value.trim();
   const password = document.getElementById('loginPassword').value;
   const err = document.getElementById('loginError');
   const btn = document.getElementById('loginBtn');
   err.classList.remove('show');
-  if(!email || !password){ err.textContent = 'Veuillez renseigner l\'e-mail et le mot de passe.'; err.classList.add('show'); return; }
+  if(!/^\d{6}$/.test(pin) || !password){ err.textContent = 'Veuillez renseigner un code PIN à 6 chiffres et votre mot de passe.'; err.classList.add('show'); return; }
   btn.disabled = true; btn.textContent = 'Connexion...';
+
+  const { data: email, error: pinError } = await sb.rpc('get_admin_email', { p_pin: pin });
+  if(pinError || !email){
+    btn.disabled = false; btn.textContent = 'Se connecter';
+    err.textContent = 'Code PIN ou mot de passe incorrect.'; err.classList.add('show'); return;
+  }
+
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   btn.disabled = false; btn.textContent = 'Se connecter';
-  if(error){ err.textContent = 'Connexion refusée : ' + error.message; err.classList.add('show'); return; }
+  if(error){ err.textContent = 'Code PIN ou mot de passe incorrect.'; err.classList.add('show'); return; }
 
   const { data: profile } = await sb.from('admin_profiles').select('*').eq('id', data.user.id).maybeSingle();
   if(!profile){

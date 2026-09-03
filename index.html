@@ -289,6 +289,7 @@
     background:rgba(255,255,255,.08);color:#fff;margin-bottom:10px;font-family:'Montserrat',sans-serif;
   }
   .lp-form input::placeholder{color:#8FA294}
+  .lp-error{color:#E9A090;font-size:11.5px;min-height:14px;margin:-4px 0 8px}
   .lp-join-btn{
     width:100%;background:var(--orange);color:#fff;border:none;border-radius:9px;padding:13px;
     font-weight:800;font-size:13px;cursor:pointer;letter-spacing:.2px;
@@ -904,34 +905,70 @@ function currentTier(points){
 function nextTier(points){
   return TIERS.find(t => t.min > points) || null;
 }
-function genCode(){
-  return 'LNG-' + Math.random().toString(36).slice(2,6).toUpperCase();
-}
 function scrollToLoyalty(){
   document.getElementById('loyalty').scrollIntoView({behavior:'smooth', block:'start'});
 }
-function joinLoyalty(){
-  const name = (document.getElementById('lpName')?.value || '').trim();
+
+/* Phone number is now the client's login: we look them up (or create a
+   membership) server-side via find_or_create_loyalty, never generate a
+   code locally — the server is the source of truth for points. */
+async function loyaltyLogin(){
   const phone = (document.getElementById('lpPhone')?.value || '').trim();
-  if(!name || !phone){ alert('Merci de renseigner votre nom et votre numéro.'); return; }
-  const p = { name, phone, code: genCode(), points: 0 };
-  saveLoyalty(p);
+  const err = document.getElementById('lpError');
+  if(err) err.textContent = '';
+  if(!phone){ if(err) err.textContent = 'Merci de renseigner votre numéro.'; return; }
+  if(!sb){ if(err) err.textContent = 'Indisponible hors ligne.'; return; }
+  const { data, error } = await sb.rpc('find_or_create_loyalty', { p_phone: phone });
+  if(error){ if(err) err.textContent = 'Une erreur est survenue. Réessayez.'; return; }
+  if(data && data.length){
+    const row = data[0];
+    saveLoyalty({ name: row.name, phone, code: row.code, points: row.points });
+    renderLoyalty();
+    return;
+  }
+  // No membership yet for this phone — ask for a name to create one.
+  renderLoyaltyNameStep(phone);
+}
+function renderLoyaltyNameStep(phone){
+  const panel = document.getElementById('loyaltyPanel');
+  panel.innerHTML = `
+    <div class="lp-name">Nouveau numéro — créons votre carte</div>
+    <div class="lp-code" style="color:#8FA294">${phone}</div>
+    <div class="lp-form">
+      <input type="text" id="lpName" placeholder="Nom et prénom">
+    </div>
+    <div class="lp-error" id="lpError"></div>
+    <button class="lp-join-btn" onclick="loyaltyCreate('${phone.replace(/'/g,"\\'")}')">Créer ma carte</button>
+  `;
+}
+async function loyaltyCreate(phone){
+  const name = (document.getElementById('lpName')?.value || '').trim();
+  const err = document.getElementById('lpError');
+  if(!name){ if(err) err.textContent = 'Merci de renseigner votre nom.'; return; }
+  const { data, error } = await sb.rpc('find_or_create_loyalty', { p_phone: phone, p_name: name });
+  if(error || !data || !data.length){ if(err) err.textContent = 'Une erreur est survenue. Réessayez.'; return; }
+  const row = data[0];
+  saveLoyalty({ name: row.name, phone, code: row.code, points: row.points });
   renderLoyalty();
-  if(sb){ sb.from('loyalty_members').insert({ code:p.code, name:p.name, phone:p.phone, points:0 }).then(()=>{}); }
 }
 function leaveLoyalty(){
   try{ localStorage.removeItem('lng_loyalty'); }catch(e){}
   renderLoyalty();
 }
-function addLoyaltyPoints(total){
-  const p = loadLoyalty();
-  if(!p) return 0;
+/* Credits points server-side for a given loyalty code (used at checkout —
+   works even for a code typed manually, not just the locally logged-in
+   profile). Returns the amount earned, or 0 if it couldn't be credited. */
+async function creditLoyaltyPoints(code, total){
+  if(!sb || !code) return 0;
   const earned = Math.floor(total / 100);
-  p.points += earned;
-  saveLoyalty(p);
-  renderLoyalty();
-  if(sb){ sb.from('loyalty_members').update({ points: p.points }).eq('code', p.code).then(()=>{}); }
-  return earned;
+  if(earned <= 0) return 0;
+  try{
+    const { data, error } = await sb.rpc('add_loyalty_points', { p_code: code, p_amount: earned });
+    if(error) return 0;
+    const profile = loadLoyalty();
+    if(profile && profile.code === code){ profile.points = data; saveLoyalty(profile); renderLoyalty(); }
+    return earned;
+  }catch(e){ return 0; }
 }
 function renderLoyalty(){
   const profile = loadLoyalty();
@@ -940,13 +977,13 @@ function renderLoyalty(){
   if(!profile){
     pill.innerHTML = LOYALTY_ICON + ' Fidélité';
     panel.innerHTML = `
-      <div class="lp-name">Rejoindre le programme</div>
-      <div class="lp-code" style="color:#8FA294">Gratuit · sans engagement</div>
+      <div class="lp-name">Accéder à ma carte fidélité</div>
+      <div class="lp-code" style="color:#8FA294">Connexion par numéro de téléphone</div>
       <div class="lp-form">
-        <input type="text" id="lpName" placeholder="Nom et prénom">
-        <input type="tel" id="lpPhone" placeholder="Numéro WhatsApp">
+        <input type="tel" id="lpPhone" placeholder="Numéro de téléphone">
       </div>
-      <button class="lp-join-btn" onclick="joinLoyalty()">Créer ma carte</button>
+      <div class="lp-error" id="lpError"></div>
+      <button class="lp-join-btn" onclick="loyaltyLogin()">Se connecter</button>
     `;
     return;
   }
@@ -1081,6 +1118,10 @@ function renderDrawer(){
       <label>Note (optionnel)</label>
       <textarea id="custNote" placeholder="Allergies, préférences, heure souhaitée..."></textarea>
     </div>
+    <div class="field">
+      <label>Numéro de fidélité (optionnel)</label>
+      <input type="text" id="custLoyalty" placeholder="LNG-XXXX" value="${loadLoyalty()?.code || ''}">
+    </div>
     <div class="sum-row"><span>Articles</span><span>${cartCount()}</span></div>
     <div class="sum-total"><span>Total</span><span>${fmt(cartTotal())}</span></div>
     <button class="whatsapp-btn" onclick="sendWhatsApp()"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.44 1.32 4.94L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.95 6.45 17.5 2 12.04 2zm5.83 14.05c-.24.68-1.4 1.32-1.93 1.4-.5.08-1.12.11-1.81-.11-.42-.13-.96-.31-1.65-.6-2.9-1.25-4.8-4.16-4.94-4.35-.14-.19-1.18-1.57-1.18-3 0-1.42.75-2.13 1.02-2.42.27-.29.58-.36.78-.36l.55.01c.18.01.42-.07.65.5.24.58.82 2 .89 2.15.07.14.11.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.13-.28.28-.12.55.16.27.71 1.17 1.53 1.9 1.05.94 1.94 1.23 2.21 1.37.27.14.43.12.59-.07.16-.19.68-.79.86-1.06.18-.27.36-.22.6-.13.24.09 1.53.72 1.79.85.27.14.44.2.51.31.07.11.07.65-.17 1.33z"/></svg> Commander via WhatsApp</button>
@@ -1088,10 +1129,14 @@ function renderDrawer(){
   `;
 }
 
-function sendWhatsApp(){
+async function sendWhatsApp(){
   const name = (document.getElementById('custName')?.value || '').trim();
   const address = (document.getElementById('custAddress')?.value || '').trim();
   const note = (document.getElementById('custNote')?.value || '').trim();
+  // Whatever the client typed at checkout wins — lets them credit a
+  // different phone's card, or one typed manually if this browser has no
+  // saved session, not just whatever happens to be logged in locally.
+  const loyaltyCode = (document.getElementById('custLoyalty')?.value || '').trim();
 
   const modeLabel = { livraison: 'Livraison', emporter: 'À emporter', surplace: 'Sur place' }[orderMode];
 
@@ -1109,13 +1154,14 @@ function sendWhatsApp(){
   msg += `\n*Total : ${fmt(cartTotal())}*\n`;
   if(note) msg += `\nNote : ${note}\n`;
 
-  const profile = loadLoyalty();
-  if(profile){
-    const earned = addLoyaltyPoints(cartTotal());
-    msg += `\n*Carte fidélité :* ${profile.code} (+${earned} pts, total ${profile.points} pts)\n`;
+  if(loyaltyCode){
+    const earned = await creditLoyaltyPoints(loyaltyCode, cartTotal());
+    msg += earned > 0
+      ? `\n*Carte fidélité :* ${loyaltyCode} (+${earned} pts)\n`
+      : `\n*Carte fidélité :* ${loyaltyCode}\n`;
   }
 
-  saveOrderToDB({ name, address, note, mode: orderMode, profile });
+  saveOrderToDB({ name, address, note, mode: orderMode, loyaltyCode });
 
   const url = `https://wa.me/22891072125?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
@@ -1123,12 +1169,12 @@ function sendWhatsApp(){
 
 /* Best-effort: record the order in Supabase so it shows up in the admin dashboard.
    Never blocks or breaks the WhatsApp flow if it fails (e.g. offline). */
-async function saveOrderToDB({ name, address, note, mode, profile }){
+async function saveOrderToDB({ name, address, note, mode, loyaltyCode }){
   if(!sb) return;
   try{
     const { data: order, error } = await sb.from('orders').insert({
-      customer_name: name, phone: profile ? profile.phone : '', mode, address, note,
-      total: cartTotal(), loyalty_code: profile ? profile.code : '',
+      customer_name: name, phone: loadLoyalty()?.phone || '', mode, address, note,
+      total: cartTotal(), loyalty_code: loyaltyCode || '',
     }).select().single();
     if(error || !order) return;
     const rows = cart.map(l => ({
