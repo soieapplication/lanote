@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Note Gourmande — Commander en ligne</title>
+<link rel="icon" href="assets/iconorange.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --cream:#FBF7F3;
+    --sand:#E7E2DB;
+    --ink:#2A2520;
+    --ink-soft:#6F665E;
+    --line:#EFE7DD;
+    --orange:#DE6326;
+    --orange-deep:#C24E17;
+    --green:#206947;
+    --green-deep:#183F2C;
+    --green-night:#1A2721;
+    --red:#C0392B;
+    --gold:#E9D9C7;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--cream);color:var(--ink);
+    font-family:'Montserrat',sans-serif;-webkit-font-smoothing:antialiased;
+    padding-bottom:90px;
+  }
+  h1,h2,h3,.serif{font-family:'Playfair Display',serif}
+  a{color:inherit}
+  img{max-width:100%;display:block}
+
+  .notice{
+    background:var(--green-night);color:#CFE0D3;font-size:11.5px;letter-spacing:.5px;
+    text-align:center;padding:8px 14px;font-weight:600;
+  }
+  .notice span{color:var(--orange)}
+
+  header{
+    position:sticky;top:0;z-index:40;background:rgba(251,247,243,.92);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .head-row{
+    max-width:1180px;margin:0 auto;padding:14px 22px;
+    display:flex;align-items:center;justify-content:space-between;gap:18px;
+  }
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand img{height:44px;width:auto}
+  .head-actions{display:flex;align-items:center;gap:14px}
+  .tel-pill{
+    display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--green-deep);
+    border:1px solid var(--line);padding:8px 14px;border-radius:30px;white-space:nowrap;text-decoration:none;
+  }
+  .tel-pill:hover{border-color:var(--green)}
+  .cart-btn{
+    position:relative;display:flex;align-items:center;gap:9px;background:var(--orange);color:#fff;border:none;
+    padding:10px 18px 10px 14px;border-radius:30px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;
+    cursor:pointer;letter-spacing:.3px;transition:background .15s,transform .12s;
+  }
+  .cart-btn:hover{background:var(--orange-deep)}
+  .cart-count{
+    background:#fff;color:var(--orange);border-radius:50%;min-width:20px;height:20px;display:flex;
+    align-items:center;justify-content:center;font-size:11px;font-weight:800;padding:0 4px;
+  }
+
+  .hero{
+    position:relative;max-width:1180px;margin:0 auto;padding:64px 22px 40px;
+    display:flex;align-items:center;gap:56px;overflow:hidden;
+  }
+  .hero-copy{flex:1;min-width:280px}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:3px;
+    text-transform:uppercase;color:var(--green-deep);margin-bottom:20px;
+  }
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange)}
+  .hero h1{font-size:clamp(34px,5vw,58px);line-height:1.05;font-weight:600;margin:0 0 20px;color:var(--ink)}
+  .hero h1 em{font-style:italic;color:var(--orange)}
+  .hero p{font-size:15.5px;line-height:1.75;color:var(--ink-soft);max-width:460px;margin:0 0 30px}
+  .hero-ctas{display:flex;gap:14px;flex-wrap:wrap}
+  .btn-primary{
+    background:var(--green);color:#fff;border:none;padding:15px 28px;border-radius:8px;font-weight:700;
+    font-size:13.5px;letter-spacing:.4px;cursor:pointer;text-decoration:none;display:inline-block;transition:transform .15s, background .15s;
+  }
+  .btn-primary:hover{background:var(--green-deep);transform:translateY(-1px)}
+  .btn-ghost{
+    border:1.5px solid var(--ink);color:var(--ink);background:transparent;padding:14px 26px;border-radius:8px;
+    font-weight:700;font-size:13.5px;letter-spacing:.4px;cursor:pointer;text-decoration:none;display:inline-block;
+  }
+  .hero-note{
+    flex:none;width:280px;height:280px;border-radius:50%;background:var(--green-night);
+    display:flex;align-items:center;justify-content:center;position:relative;
+    box-shadow:0 30px 60px rgba(24,63,44,.25);
+  }
+  .hero-note::before{
+    content:'';position:absolute;inset:14px;border-radius:50%;border:1px dashed rgba(255,255,255,.18);
+  }
+  .hero-note img{height:100px;width:auto}
+  .hero-hours{
+    position:absolute;bottom:-6px;right:-6px;background:var(--orange);color:#fff;border-radius:50%;
+    width:88px;height:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-size:9.5px;font-weight:800;text-align:center;line-height:1.35;letter-spacing:.3px;
+    box-shadow:0 8px 18px rgba(222,99,38,.4);
+  }
+
+  .cat-nav-wrap{
+    position:sticky;top:73px;z-index:30;background:var(--cream);border-bottom:1px solid var(--line);
+  }
+  .cat-nav{
+    max-width:1180px;margin:0 auto;padding:14px 22px;display:flex;gap:10px;overflow-x:auto;
+    scrollbar-width:none;
+  }
+  .cat-nav::-webkit-scrollbar{display:none}
+  .cat-pill{
+    flex:none;padding:9px 18px;border-radius:30px;border:1px solid var(--line);background:#fff;
+    font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;white-space:nowrap;
+    transition:all .15s;
+  }
+  .cat-pill:hover{border-color:var(--orange);color:var(--orange)}
+  .cat-pill.active{background:var(--ink);border-color:var(--ink);color:#fff}
+
+  main{max-width:1180px;margin:0 auto;padding:10px 22px 40px}
+  .menu-section{padding:52px 0 18px;border-bottom:1px solid var(--line)}
+  .menu-section:last-child{border-bottom:none}
+  .section-head{display:flex;align-items:baseline;gap:16px;margin-bottom:6px}
+  .section-num{font-family:'Playfair Display',serif;font-size:15px;color:var(--gold);font-weight:700}
+  .section-head h2{font-size:26px;margin:0;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--orange)}
+  .section-desc{color:var(--ink-soft);font-size:13.5px;margin:2px 0 28px;max-width:600px;line-height:1.6}
+
+  .item-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:680px){.item-grid{grid-template-columns:1fr}}
+
+  .item-card{
+    background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 18px;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .item-top{display:flex;justify-content:space-between;gap:14px}
+  .item-main{flex:1;min-width:0}
+  .item-name{font-weight:700;font-size:14.5px;color:var(--ink);margin-bottom:5px}
+  .item-desc{font-size:12.5px;color:var(--ink-soft);line-height:1.55}
+  .item-side{flex:none;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-start;gap:10px}
+  .item-price{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13.5px;color:var(--green-deep);white-space:nowrap}
+  .add-btn{
+    width:34px;height:34px;border-radius:50%;border:1.5px solid var(--orange);background:#fff;color:var(--orange);
+    font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:all .15s;line-height:1;
+  }
+  .add-btn:hover{background:var(--orange);color:#fff}
+  .options-btn{
+    border:1.5px solid var(--orange);background:#fff;color:var(--orange);border-radius:20px;
+    padding:8px 14px;font-size:11.5px;font-weight:800;cursor:pointer;white-space:nowrap;letter-spacing:.2px;
+  }
+  .options-btn:hover{background:var(--orange);color:#fff}
+  .qty-stepper{display:flex;align-items:center;gap:8px;background:var(--orange);border-radius:20px;padding:3px 4px}
+  .qty-stepper button{
+    width:26px;height:26px;border-radius:50%;border:none;background:#fff;color:var(--orange);font-weight:800;
+    cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;
+  }
+  .qty-stepper .qty-val{color:#fff;font-weight:800;font-size:13px;min-width:14px;text-align:center}
+
+  .options-panel{
+    display:none;border-top:1px dashed var(--line);padding-top:14px;margin-top:2px;
+  }
+  .options-panel.open{display:block}
+  .opt-group{margin-bottom:14px}
+  .opt-group:last-of-type{margin-bottom:10px}
+  .opt-label{font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px}
+  .opt-required{color:var(--orange);font-weight:800}
+  .opt-choices{display:flex;flex-wrap:wrap;gap:7px}
+  .opt-chip{
+    font-size:11.5px;font-weight:700;padding:7px 13px;border-radius:20px;border:1px solid var(--line);
+    color:var(--ink-soft);cursor:pointer;background:var(--cream);user-select:none;transition:all .12s;
+  }
+  .opt-chip:hover{border-color:var(--orange)}
+  .opt-chip.sel{background:var(--green);border-color:var(--green);color:#fff}
+  .opt-chip.extra.sel{background:var(--orange);border-color:var(--orange)}
+  .opt-chip .opt-price{opacity:.85;font-weight:600;margin-left:5px}
+  .opt-panel-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:6px;flex-wrap:wrap}
+  .opt-running-total{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:14px;color:var(--ink)}
+  .opt-add-btn{
+    background:var(--orange);color:#fff;border:none;border-radius:20px;padding:10px 20px;font-weight:800;
+    font-size:12.5px;cursor:pointer;letter-spacing:.2px;
+  }
+  .opt-add-btn:hover{background:var(--orange-deep)}
+  .opt-qty{display:flex;align-items:center;gap:10px}
+  .opt-qty button{
+    width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:#fff;font-weight:800;
+    cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--ink);
+  }
+
+  footer{background:var(--green-night);color:#EFE9DF;padding:56px 22px 30px}
+  .footer-inner{max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;gap:40px;justify-content:space-between}
+  footer h3{color:#fff;font-size:20px;margin:0 0 14px}
+  footer p, footer a{color:#B9C9BC;font-size:13px;line-height:1.8;text-decoration:none}
+  footer a:hover{color:var(--orange)}
+  .foot-bottom{
+    max-width:1180px;margin:40px auto 0;padding-top:22px;border-top:1px solid #2C3E33;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:11px;letter-spacing:.5px;color:#7C8F81;
+  }
+
+  .fab-cart{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:50;
+    background:var(--ink);color:#fff;border:none;border-radius:40px;padding:14px 24px;
+    display:none;align-items:center;gap:12px;font-weight:700;font-size:13.5px;cursor:pointer;
+    box-shadow:0 14px 30px rgba(0,0,0,.25);
+  }
+  .fab-cart.show{display:flex}
+  .fab-badge{background:var(--orange);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px}
+
+  .overlay{
+    position:fixed;inset:0;background:rgba(20,17,14,.5);z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  .overlay.open{opacity:1;pointer-events:auto}
+  .drawer{
+    position:fixed;top:0;right:0;height:100%;width:min(420px,92vw);background:var(--cream);z-index:70;
+    box-shadow:-20px 0 50px rgba(0,0,0,.2);transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+    display:flex;flex-direction:column;
+  }
+  .drawer.open{transform:translateX(0)}
+  .drawer-head{
+    padding:22px 22px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;
+  }
+  .drawer-head h3{margin:0;font-size:21px}
+  .close-btn{background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink-soft);line-height:1}
+  .drawer-body{flex:1;overflow-y:auto;padding:16px 22px}
+  .empty-cart{text-align:center;color:var(--ink-soft);font-size:13.5px;padding:60px 10px;line-height:1.7}
+  .cart-line{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .cart-line-main{flex:1;min-width:0}
+  .cart-line-name{font-weight:700;font-size:13.5px;margin-bottom:2px}
+  .cart-line-opts{font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;line-height:1.5}
+  .cart-line-price{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--green-deep);font-weight:700}
+  .cart-line-remove{background:none;border:none;color:var(--red);font-size:11px;font-weight:700;cursor:pointer;padding:0;margin-top:6px}
+  .drawer-foot{border-top:1px solid var(--line);padding:20px 22px 26px;background:#fff}
+  .sum-row{display:flex;justify-content:space-between;font-size:13px;color:var(--ink-soft);margin-bottom:8px}
+  .sum-total{display:flex;justify-content:space-between;font-size:19px;font-weight:800;margin:14px 0 18px;color:var(--ink)}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
+  .field input, .field select, .field textarea{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:11px 12px;font-family:'Montserrat',sans-serif;
+    font-size:13.5px;background:var(--cream);color:var(--ink);
+  }
+  .field textarea{resize:vertical;min-height:52px}
+  .mode-toggle{display:flex;gap:8px;margin-bottom:14px}
+  .mode-btn{
+    flex:1;padding:10px;border-radius:8px;border:1.5px solid var(--line);background:#fff;font-size:12px;
+    font-weight:700;cursor:pointer;color:var(--ink-soft);
+  }
+  .mode-btn.sel{border-color:var(--green);background:var(--green);color:#fff}
+  .whatsapp-btn{
+    width:100%;background:var(--orange);color:#fff;border:none;border-radius:9px;padding:16px;
+    font-weight:800;font-size:14px;letter-spacing:.3px;cursor:pointer;display:flex;align-items:center;
+    justify-content:center;gap:10px;
+  }
+  .whatsapp-btn:hover{background:var(--orange-deep)}
+  .whatsapp-btn:disabled{opacity:.5;cursor:not-allowed}
+  .drawer-hint{font-size:11px;color:var(--ink-soft);text-align:center;margin-top:10px;line-height:1.6}
+
+  /* ===== Loyalty ===== */
+  .loyalty-pill{
+    display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--green-deep);
+    border:1px solid var(--line);padding:8px 14px;border-radius:30px;white-space:nowrap;cursor:pointer;background:#fff;
+    transition:border-color .15s;
+  }
+  .loyalty-pill:hover{border-color:var(--orange)}
+  .loyalty-pill .pts{color:var(--orange);font-family:'JetBrains Mono',monospace;font-weight:800}
+
+  .loyalty-section{
+    max-width:1180px;margin:0 auto;padding:20px 22px 10px;
+  }
+  .loyalty-card{
+    position:relative;overflow:hidden;border-radius:18px;background:var(--green-night);color:#EFE9DF;
+    padding:38px 34px;display:flex;flex-wrap:wrap;gap:32px;justify-content:space-between;align-items:center;
+  }
+  .loyalty-card::before{
+    content:'';position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;
+    background:radial-gradient(circle,rgba(222,99,38,.35),transparent 70%);
+  }
+  .loyalty-copy{position:relative;flex:1;min-width:260px}
+  .loyalty-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--orange);margin-bottom:10px}
+  .loyalty-card h2{font-size:26px;margin:0 0 10px;font-weight:700}
+  .loyalty-card p{font-size:13.5px;line-height:1.7;color:#B9C9BC;max-width:420px;margin:0 0 18px}
+  .tier-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .tier-chip{font-size:11px;font-weight:800;padding:6px 12px;border-radius:20px;letter-spacing:.3px;border:1px solid rgba(255,255,255,.18)}
+  .tier-chip.bronze{color:#D8B48A}
+  .tier-chip.argent{color:#D6D9DC}
+  .tier-chip.or{color:#E9C46A}
+
+  .loyalty-panel{
+    position:relative;flex:none;width:300px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+    border-radius:14px;padding:22px;backdrop-filter:blur(6px);
+  }
+  .loyalty-panel .lp-name{font-weight:700;font-size:15px;margin-bottom:2px}
+  .loyalty-panel .lp-code{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--orange);margin-bottom:16px}
+  .lp-progress-track{height:8px;border-radius:6px;background:rgba(255,255,255,.14);overflow:hidden;margin-bottom:8px}
+  .lp-progress-fill{height:100%;background:var(--orange);border-radius:6px;transition:width .3s}
+  .lp-progress-label{font-size:11px;color:#B9C9BC;margin-bottom:16px}
+  .lp-points{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:800;color:#fff}
+  .lp-points-label{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:#8FA294;margin-bottom:14px}
+  .lp-form input{
+    width:100%;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:11px 12px;font-size:13px;
+    background:rgba(255,255,255,.08);color:#fff;margin-bottom:10px;font-family:'Montserrat',sans-serif;
+  }
+  .lp-form input::placeholder{color:#8FA294}
+  .lp-join-btn{
+    width:100%;background:var(--orange);color:#fff;border:none;border-radius:9px;padding:13px;
+    font-weight:800;font-size:13px;cursor:pointer;letter-spacing:.2px;
+  }
+  .lp-join-btn:hover{background:var(--orange-deep)}
+  .lp-logout{background:none;border:none;color:#8FA294;font-size:11px;cursor:pointer;text-decoration:underline;margin-top:10px;padding:0}
+</style>
+</head>
+<body>
+
+<div class="notice">Réservation conseillée · <span>(+228) 91 07 21 25</span> · Adidogomé Apédokoé, en face de la station Sanol</div>
+
+<header>
+  <div class="head-row">
+    <div class="brand">
+      <img src="assets/logofull.png" alt="La Note Gourmande">
+    </div>
+    <div class="head-actions">
+      <a class="tel-pill" href="tel:+22891072125">📞 91 07 21 25</a>
+      <button class="loyalty-pill" onclick="scrollToLoyalty()" id="loyaltyPill">🏆 Fidélité</button>
+      <button class="cart-btn" onclick="openCart()">
+        🛒 Panier <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-copy">
+    <div class="eyebrow"><span class="dot"></span>Afro-fusion · Musique &amp; Gastronomie</div>
+    <h1>Chaque plat est<br><em>une note juste.</em></h1>
+    <p>Composez votre commande, choisissez vos accompagnements et suppléments pour chaque plat, puis envoyez-la directement sur WhatsApp — on s'occupe du reste.</p>
+    <div class="hero-ctas">
+      <a href="#menu" class="btn-primary">Voir le menu</a>
+      <a href="tel:+22891072125" class="btn-ghost">Réserver une table</a>
+    </div>
+  </div>
+  <div class="hero-note">
+    <img src="assets/iconwhite.png" alt="">
+    <div class="hero-hours">LUN–JEU<br>18H–00H<br>WEEK-END<br>18H–2H</div>
+  </div>
+</section>
+
+<section class="loyalty-section" id="loyalty">
+  <div class="loyalty-card">
+    <div class="loyalty-copy">
+      <div class="loyalty-eyebrow">La Note Fidèle</div>
+      <h2>Chaque commande compte un point de plus.</h2>
+      <p>Cumulez 1 point par tranche de 100 F dépensée et débloquez des avantages exclusifs — remises, plats offerts, accès prioritaire au rooftop.</p>
+      <div class="tier-row">
+        <span class="tier-chip bronze">Bronze · 0 pt</span>
+        <span class="tier-chip argent">Argent · 500 pts — -5% sur l'addition</span>
+        <span class="tier-chip or">Or · 1500 pts — dessert offert + priorité rooftop</span>
+      </div>
+    </div>
+    <div class="loyalty-panel" id="loyaltyPanel"></div>
+  </div>
+</section>
+
+<div class="cat-nav-wrap">
+  <div class="cat-nav" id="catNav"></div>
+</div>
+
+<main id="menu"></main>
+
+<footer>
+  <div class="footer-inner">
+    <div style="max-width:340px">
+      <img src="assets/iconwhite.png" style="height:34px;margin-bottom:14px">
+      <h3 style="font-family:'Playfair Display',serif;font-style:italic">La Note Gourmande</h3>
+      <p>Une cuisine afro-fusion qui harmonise la musique et la gastronomie. Chaque repas, une note juste.</p>
+    </div>
+    <div>
+      <h3>Contact</h3>
+      <p>Adidogomé Apédokoé,<br>en face de la station Sanol</p>
+      <p><a href="tel:+22891072125">(+228) 91 07 21 25</a></p>
+      <p><a href="mailto:lanotegourmande228@gmail.com">lanotegourmande228@gmail.com</a></p>
+    </div>
+    <div>
+      <h3>Horaires</h3>
+      <p>Lundi – Jeudi : 18h00 – 00h00<br>Week-end : 18h00 – 02h00</p>
+      <p style="margin-top:10px">La maison n'accepte pas les chèques.<br>Veuillez ne pas payer les factures manuscrites.</p>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>© La Note Gourmande</span>
+    <span>Charte graphique by We Are Aurum</span>
+  </div>
+</footer>
+
+<button class="fab-cart" id="fabCart" onclick="openCart()">
+  🛒 Voir le panier <span class="fab-badge" id="fabCount">0</span>
+</button>
+
+<div class="overlay" id="overlay" onclick="closeCart()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h3>Votre panier</h3>
+    <button class="close-btn" onclick="closeCart()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-foot" id="drawerFoot"></div>
+</div>
+
+<script>
+/* ===================== SUPABASE ===================== */
+const SUPABASE_URL = 'https://ehkukujznqrlqrqawnff.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoa3VrdWp6bnFybHFycWF3bmZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzOTE2MzQsImV4cCI6MjEwMzk2NzYzNH0.dW_aH97-iTsRZmNFV9X9obb6CP6Pbv3C9kWIT9O3MOo';
+const sb = (typeof supabase !== 'undefined') ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+/* ===================== SHARED OPTION LISTS ===================== */
+const GARNITURES = ['Riz Pilaf ou aux légumes','Riz au Chorizo','Couscous Blanc','Pommes de terre sautées','Purée','Pâtes sautées à l\'ail','Frites','Haricot vert','Attieke'];
+const ACCOMPAGNEMENT_GROUP = { key:'garniture', type:'radio', label:'Accompagnement au choix', required:true, options: GARNITURES };
+
+const SALAD_EXTRAS = { key:'extra', type:'checkbox', label:'Suppléments (en option)', options:[
+  {name:'Thon',price:1000},{name:'Œufs durs',price:1000},{name:'Jambon',price:1000},
+  {name:'Pommes de terre',price:1000},{name:'Champignons',price:1000},
+]};
+const PIZZA_EXTRAS = { key:'extra', type:'checkbox', label:'Suppléments (en option)', options:[
+  {name:'Poulet',price:1000},{name:'Viande hachée',price:1000},{name:'Merguez',price:1000},
+  {name:'Chorizo',price:1000},{name:'Pepperoni',price:1000},{name:'Champignons',price:1000},{name:'Jambon',price:1000},
+]};
+const SANDWICH_EXTRAS = { key:'extra', type:'checkbox', label:'Suppléments (en option)', options:[
+  {name:'Merguez',price:1000},{name:'Bacon',price:1000},{name:'Avocats',price:1000},{name:'Cheddar',price:1000},
+]};
+
+function radio(key, label, options){ return { key, type:'radio', label, required:true, options }; }
+
+/* ===================== MENU DATA ===================== */
+/* Static fallback, used until (or unless) the database menu finishes loading. */
+const STATIC_MENU = [
+  { id:'aperitifs', title:'Apéritifs', num:'01', desc:"Pour ouvrir le bal en douceur.", items:[
+    { n:'Chicken Love', d:'Sauce tartare (x4)', p:3000 },
+    { n:'Chicken Wings', d:'x4', p:2500 },
+    { n:'Bruschettas', d:'Pains toastés au guacamole et au saumon', p:4500 },
+    { n:'Fatayer (x3)', d:'Au choix', p:2500, opts:[radio('choix','Choix',['Viande','Poulet','Légumes'])] },
+    { n:'Nems (x4)', d:'Au choix', p:2500, opts:[radio('choix','Choix',['Viande','Poulet','Légumes'])] },
+    { n:'Samoussas (x4)', d:'Au choix', p:2500, opts:[radio('choix','Choix',['Viande','Poulet','Légumes'])] },
+    { n:'Plateau mixte à partager (x6)', d:'2 pièces de Samoussas, 2 Nems et 2 Fatayer au choix', p:5000 },
+  ]},
+  { id:'salades', title:'Salades', num:'02', desc:"Fraîcheur et croquant, à personnaliser.", items:[
+    { n:'Salade Verte', d:'Salade, oignons citronnés, tomates', p:1500, opts:[SALAD_EXTRAS] },
+    { n:'Salade Libanaise', d:'Salade, oignons citronnés, tomates, radis, feuilles de menthe, concombres', p:2500, opts:[SALAD_EXTRAS] },
+    { n:'Crudités variées', d:'Salade, tomates, carottes, maïs doux, œuf dur, concombres, olives', p:2500, opts:[SALAD_EXTRAS] },
+    { n:'Salade Fraîcheur au saumon', d:'Fumé de saumon, choux, carottes, betteraves, concombre', p:5000, opts:[SALAD_EXTRAS] },
+    { n:"Salade d'avocat aux crevettes", d:'Avocats, tomates, crevettes, sauce salsa', p:4000, opts:[SALAD_EXTRAS] },
+    { n:'Salade Signature', d:'Salade, tomates, poulet, croutons, sésame, œufs, fromage Peulh', p:3500, opts:[SALAD_EXTRAS] },
+  ]},
+  { id:'viandes', title:'Viandes', num:'03', desc:"Servi avec un accompagnement au choix.", items:[
+    { n:'Poulet entier', d:'', p:9500, opts:[ACCOMPAGNEMENT_GROUP] },
+    { n:'Demi poulet', d:'', p:6000, opts:[ACCOMPAGNEMENT_GROUP] },
+    { n:'Quart de poulet', d:'', p:4500, opts:[ACCOMPAGNEMENT_GROUP] },
+    { n:'Entrecôte', d:'', p:8000, opts:[ACCOMPAGNEMENT_GROUP] },
+    { n:'Pavé de bœuf', d:'', p:6500, opts:[ACCOMPAGNEMENT_GROUP] },
+    { n:"Côtelettes d'agneau", d:'', p:7500, opts:[ACCOMPAGNEMENT_GROUP] },
+    { n:'Travers de porc', d:'', p:6500, opts:[ACCOMPAGNEMENT_GROUP] },
+    { n:'Brochettes de bœuf', d:'', p:6500, opts:[ACCOMPAGNEMENT_GROUP] },
+    { n:'Brochettes de gambas', d:'', p:12000, opts:[ACCOMPAGNEMENT_GROUP] },
+  ]},
+  { id:'poissons', title:'Poissons', num:'04', desc:"Servi avec un accompagnement au choix.", items:[
+    { n:'Corvina', d:'En fonction du grammage', p:6500, from:true, opts:[ACCOMPAGNEMENT_GROUP] },
+    { n:'Steak de poissons', d:'Poissons variés', p:8000, opts:[ACCOMPAGNEMENT_GROUP] },
+    { n:'Mérou', d:'En fonction du grammage', p:7500, from:true, opts:[ACCOMPAGNEMENT_GROUP] },
+  ]},
+  { id:'garnitures', title:'Garnitures', num:'05', desc:"Vos accompagnements à composer, à la carte.", items:[
+    { n:'Riz Pilaf ou aux légumes', d:'', p:1500 },
+    { n:'Riz au Chorizo', d:'', p:2000 },
+    { n:'Couscous Blanc', d:'', p:1500 },
+    { n:'Pommes de terre sautées', d:'', p:1500 },
+    { n:'Purée', d:'Au choix', p:1500, opts:[radio('base','Base',['Pommes de terre','Patate douce'])] },
+    { n:"Pâtes sautées à l'ail", d:'Au choix', p:1500, opts:[radio('type','Type',['Penne','Spaghetti'])] },
+    { n:'Frites', d:'Au choix', p:1500, opts:[radio('base','Base',['Pommes de terre','Patate douce','Ignames','Bananes plantains'])] },
+    { n:'Haricot vert', d:'', p:1500 },
+    { n:'Attieke', d:'', p:1500 },
+  ]},
+  { id:'pates', title:'Sauces & Pâtes', num:'06', desc:"Sauces italiennes et pâtes fraîches.", items:[
+    { n:'Sauce au poivre', d:'', p:1500 },
+    { n:'Sauce basquaise', d:'', p:1000 },
+    { n:'Sauce à la crème', d:'', p:1500 },
+    { n:'Sauce champignon', d:'', p:1500 },
+    { n:'Sauce de légumes sautées', d:'', p:1500 },
+    { n:'Spaghetti Carbonara', d:'', p:3500 },
+    { n:'Spaghetti Bolognaise', d:'', p:3500 },
+    { n:'Lasagnes Bolognaise', d:'', p:4000 },
+    { n:'Tagliatelles aux fruits de mer', d:'', p:6500 },
+  ]},
+  { id:'africaines', title:'Spécialités Africaines', num:'07', desc:"Les grands classiques, faits maison.", items:[
+    { n:'Le Sifio', d:'Poisson Bar mijotée dans une sauce tomate, servi avec du pinon (en fonction du grammage)', p:7000, from:true },
+    { n:'Djinkoumè Poulet', d:'', p:5500 },
+    { n:'Djinkoumè Pintade', d:'', p:7000 },
+    { n:'Akoumè', d:'Sauce Adémè - Gombo - Épinards', p:3500 },
+    { n:'Fufu', d:'Au choix', p:5000, opts:[radio('sauce','Sauce claire',['Poissons','Chèvre','Bœuf'])] },
+  ]},
+  { id:'pizza', title:'Pizza', num:'08', desc:"Pâte fine, cuisson maison — suppléments en option.", items:[
+    { n:'Pizza Margherita', d:'Sauce tomate, mozzarella, basilic, olives', p:2500, opts:[PIZZA_EXTRAS] },
+    { n:'Pizza Américaine', d:'Sauce tomate, mozzarella, basilic, jambon, olives', p:4000, opts:[PIZZA_EXTRAS] },
+    { n:'Pizza Reine', d:'Sauce tomate, mozzarella, jambon, champignons, fromage', p:4500, opts:[PIZZA_EXTRAS] },
+    { n:'Pizza Royale', d:'Sauce tomate, mozzarella, jambon, champignons, fromage, crème fraîche, œufs', p:5500, opts:[PIZZA_EXTRAS] },
+    { n:'Pizza Paysanne', d:'Sauce tomate, mozzarella, lardons, oignons, poivrons, champignons', p:6000, opts:[PIZZA_EXTRAS] },
+  ]},
+  { id:'sandwichs', title:'Sandwichs', num:'09', desc:"Sur le pouce, sans compromis.", items:[
+    { n:'Chawarma', d:'Au choix', p:1500, opts:[radio('viande','Viande',['Viande','Poulet'])] },
+    { n:'Panini', d:'Jambon, Fromage', p:3000 },
+    { n:'Tacos', d:'Au choix', p:3000, opts:[radio('viande','Viande',['Viande','Poulet'])] },
+    { n:'Kebab', d:'Salade, tomates, oignons, servi avec des frites', p:3500, opts:[
+        radio('viande','Viande',['Viande Kebab','Poulet']),
+        radio('sauce','Sauce au choix',['Harissa','Blanche','Samouraï']),
+        SANDWICH_EXTRAS,
+      ]},
+    { n:'Burger à la viande', d:'Steak, salades, tomates, oignons, servi avec des frites', p:3500, opts:[SANDWICH_EXTRAS] },
+    { n:'Burger au poulet', d:'Crispy chicken, salades, tomates, oignons, servi avec des frites', p:3500, opts:[SANDWICH_EXTRAS] },
+  ]},
+  { id:'desserts', title:'Desserts', num:'10', desc:"La touche sucrée qui conclut la note.", items:[
+    { n:'Mi-cuit chocolat', d:'Servi avec une boule de glace vanille', p:3500 },
+    { n:'Mousse au chocolat', d:'', p:3500 },
+    { n:'Salade de fruits de saison', d:'', p:2500 },
+    { n:'Tiramisu et son coulis de mangue', d:'', p:3500 },
+    { n:'Cheesecake et son coulis de fruits rouges', d:'', p:3500 },
+    { n:'Crêpe nature', d:'', p:1500 },
+    { n:'Crêpe au Sucre', d:'', p:2000 },
+    { n:'Crêpes au Nutella', d:'', p:3000 },
+    { n:'Dègué', d:'Au choix', p:1000, opts:[radio('base','Base',['Couscous','Mil'])] },
+  ]},
+  { id:'glaces', title:'Composez votre coupe', num:'11', desc:"Base, coulis, croquants — choisissez chaque élément.", items:[
+    { n:'1 boule de glace', d:'', p:1000, opts:[radio('parfum','Parfum',['Chocolat','Caramel','Vanille','Café','Rhum Raisin','Créole','Corossol','Fraise','Mangue','Passion'])] },
+    { n:'2 boules de glace', d:'', p:1600, opts:[
+        radio('parfum1','1er parfum',['Chocolat','Caramel','Vanille','Café','Rhum Raisin','Créole','Corossol','Fraise','Mangue','Passion']),
+        radio('parfum2','2e parfum',['Chocolat','Caramel','Vanille','Café','Rhum Raisin','Créole','Corossol','Fraise','Mangue','Passion']),
+      ]},
+    { n:'3 boules de glace', d:'', p:2500, opts:[
+        radio('parfum1','1er parfum',['Chocolat','Caramel','Vanille','Café','Rhum Raisin','Créole','Corossol','Fraise','Mangue','Passion']),
+        radio('parfum2','2e parfum',['Chocolat','Caramel','Vanille','Café','Rhum Raisin','Créole','Corossol','Fraise','Mangue','Passion']),
+        radio('parfum3','3e parfum',['Chocolat','Caramel','Vanille','Café','Rhum Raisin','Créole','Corossol','Fraise','Mangue','Passion']),
+      ]},
+    { n:'1 coulis', d:'', p:1000, opts:[radio('coulis','Coulis',['Chocolat','Caramel','Mangue','Passion'])] },
+    { n:'1 croquant', d:'', p:1000, opts:[radio('croquant','Croquant',['Oréo','M&Ms','Coco râpée','Kit Kat'])] },
+  ]},
+  { id:'cocktails', title:'Cocktails', num:'12', desc:"Bar & Rooftop — servis dès 18h.", items:[
+    { n:'Mojito', d:'Jus de citron, Rhum blanc, feuilles de menthe, sirop de canne, eau pétillante', p:4000 },
+    { n:'Piña Colada', d:'Lait de coco, jus d\'ananas, rhum blanc, sucre', p:5000 },
+    { n:'House Punch', d:"Jus d'ananas, jus d'orange, grenadine, rhum blanc, rhum brun", p:5000 },
+    { n:'Tequila Sunrise', d:"Tequila, jus d'orange, grenadine", p:4500 },
+    { n:'Margerita', d:'Tequila, Triple sec, jus de citron', p:4500 },
+    { n:'El Diablo', d:"Malibu rhum, Tequila, crème de cassis, jus d'ananas, jus de citron", p:5000 },
+    { n:'Cocktail au gingembre', d:'Feuilles de menthe, Gin, sirop de canne, jus de citron, jus de gingembre', p:5000 },
+    { n:'Blue Lagoon', d:'Vodka, Blue curaçao, Limonade', p:5000 },
+    { n:'Blue Agavate', d:"Tequila, sirop de passion, jus de citron, jus d'ananas, Blue curaçao", p:5000 },
+    { n:'Sex on the Beach', d:"Vodka, jus d'orange, jus de cranberry, sirop de pêche", p:4500 },
+    { n:'Monaco', d:'Bière (Pils), Grenadine', p:5000 },
+    { n:'Negroni', d:"Gin, Campari, Martini rouge, tranche d'orange", p:5000 },
+  ]},
+  { id:'sansalcool', title:'Cocktails sans alcool', num:'13', desc:"Tout aussi savoureux, zéro alcool.", items:[
+    { n:'Diabolo', d:'Sirop de menthe ou grenadine, sprite', p:1500 },
+    { n:'Virgin Mojito', d:'Jus de citron, feuilles de menthe, sirop de canne, eau pétillante', p:3000 },
+    { n:'Bora-Bora', d:"Jus d'ananas, jus de citron, passion, grenadine", p:3000 },
+    { n:'Virgin Colada', d:"Lait de coco, jus d'ananas, sucre", p:3500 },
+    { n:'Virgin Mojito Passion', d:'Jus de citron, feuilles de menthe, passion, sirop de canne, eau pétillante', p:2500 },
+    { n:'Fruit Punch', d:"Jus d'orange, jus d'ananas, jus de cranberry, grenadine", p:3000 },
+    { n:'Cocktail Pastèque', d:'Jus de pastèque, clémentine, eau pétillante, sucre', p:3000 },
+    { n:'Mango Mule', d:'Jus de mangue, jus de citron, gingembre, eau pétillante', p:3000 },
+    { n:"L'Île Bleue", d:"Sprite, sirop bleu, jus d'ananas", p:3000 },
+    { n:'Cocktail Exotique', d:'Jus de mangue, jus d\'orange, jus de pêche', p:3000 },
+  ]},
+  { id:'boissons', title:'Jus, Boissons chaudes & Eaux', num:'14', desc:"Naturels, chauds ou pétillants.", items:[
+    { n:'Jus naturel', d:'Au choix', p:1000, opts:[radio('parfum','Parfum',['Orange','Ananas','Pommes','Bissap','Citron','Baobab','Tamarin'])] },
+    { n:'Thé Concombre', d:'Feuille de menthe, Sprite, concombre, miel, Lipton', p:1500 },
+    { n:'Granita', d:"Jus d'ananas, jus d'orange, grenadine", p:2000 },
+    { n:'Milk au fraise', d:'Fraise, Lait, Miel, Blue curaçao', p:2000 },
+    { n:'La Note Gourmande', d:'Au choix', p:2000, opts:[radio('base','Base',['Oréo','Nesquik','Café'])] },
+    { n:'Café Latte glacé', d:'Lait, Miel, glaçons, café espresso', p:2500, opts:[radio('parfum','Parfum',['Vanille','Caramel'])] },
+    { n:'Thé ou infusion', d:'', p:1000 },
+    { n:'Espresso', d:'', p:1000 },
+    { n:'Chocolat Chaud', d:'', p:1500 },
+    { n:'Caramel Latte', d:'', p:2000 },
+    { n:'Eau plate', d:'Vitale - Cristal - Voltic', p:800, opts:[radio('format','Format',['Petit modèle','Grand modèle']), radio('marque','Marque',['Vitale','Cristal','Voltic'])] },
+    { n:'Eau pétillante', d:'Possotomé', p:2000 },
+  ]},
+  { id:'bieres', title:'Bières & Softs', num:'15', desc:"Fraîches et servies au bar comme au rooftop.", items:[
+    { n:'Bière Petit Modèle', d:'', p:500, opts:[radio('marque','Marque',['Lager','Pils','Beaufort','Castel','Djama Panaché'])] },
+    { n:'Bière Grand Modèle', d:'', p:800, opts:[radio('marque','Marque',['Lager','Pils','Beaufort','Castel','Boonekamp'])] },
+    { n:'Bière en canette', d:'', p:1000, opts:[radio('marque','Marque',['Desperados','Heineken','Guiness','Kronenbourg'])] },
+    { n:'Soft Petit Modèle', d:'', p:400, opts:[radio('marque','Marque',['World Cola','Youki','Fanta','Sprite','Pom Pom','Malta','Schweppes'])] },
+    { n:'Soft Grand Modèle', d:'', p:650, opts:[radio('marque','Marque',['World Cola','Youki','Fanta','Sprite','Pom Pom','Malta','Schweppes'])] },
+    { n:'Sport Actif / XXL / Redbull', d:'', p:800, from:true },
+  ]},
+  { id:'spiritueux', title:'Spiritueux, Vins & Champagnes', num:'16', desc:"Au verre ou à la bouteille.", items:[
+    { n:'Whisky au verre (4cl)', d:'Au choix', p:1500, from:true, opts:[radio('marque','Marque',['Black Label','Red Label',"Bailey's",'Suze','Campari','Martini Rosé','Martini Rouge','Cointreau','Chivas 12','Chivas Regal 18','Clan Campbell','Laphroaig','Via Manzoni (sans alcool)','Evadé','Jägermeister'])] },
+    { n:'Whisky bouteille', d:'Au choix', p:5000, from:true, opts:[radio('marque','Marque',['Black Label','Red Label',"Bailey's",'Suze','Campari','Martini Rosé','Martini Rouge PM','Martini Rouge GM','Chivas 12','Chivas Regal 18','Via Manzoni (sans alcool)'])] },
+    { n:'Vin (bouteille)', d:'Au choix', p:4000, from:true, opts:[radio('couleur','Couleur',['Rosé','Blanc','Rouge'])] },
+    { n:'Champagne (bouteille)', d:'Au choix', p:35000, from:true, opts:[radio('marque','Marque',['JM Gobillard','Jeanmaire','Louis Roederer','Moët & Chandon','Michel Vol','Laurent Perrier cuvée','Laurent Perrier cuvée rosé'])] },
+  ]},
+];
+
+let MENU = STATIC_MENU;
+
+/* Load the live menu from Supabase (managed in the admin dashboard). Falls back
+   silently to STATIC_MENU if the database is unreachable or empty. */
+async function loadMenuFromDB(){
+  if(!sb) return;
+  try{
+    const [{ data: cats, error: catErr }, { data: items, error: itemErr }] = await Promise.all([
+      sb.from('menu_categories').select('*').order('sort_order'),
+      sb.from('menu_items').select('*').eq('active', true).order('sort_order'),
+    ]);
+    if(catErr || itemErr || !cats || !cats.length) return;
+    const dbMenu = cats.map(c => ({
+      id: c.slug, title: c.title, num: c.num, desc: c.description || '',
+      items: items.filter(it => it.category_id === c.id).map(it => ({
+        n: it.name, d: it.description || '', p: it.price, from: it.price_from, opts: it.options || [],
+      })),
+    })).filter(c => c.items.length);
+    if(!dbMenu.length) return;
+    MENU = dbMenu;
+    panelState = {};
+    renderNav();
+    renderMenu();
+    setupScrollSpy();
+  }catch(e){ /* keep static fallback */ }
+}
+
+/* ===================== STATE ===================== */
+let cart = [];
+let panelState = {};
+
+function fmt(n){ return n.toLocaleString('fr-FR') + ' F'; }
+function itemKeyBase(catId, idx){ return catId + '__' + idx; }
+
+function renderNav(){
+  const nav = document.getElementById('catNav');
+  nav.innerHTML = MENU.map(cat =>
+    `<button class="cat-pill" data-cat="${cat.id}" onclick="scrollToCat('${cat.id}')">${cat.title}</button>`
+  ).join('');
+}
+
+function renderMenu(){
+  const main = document.getElementById('menu');
+  main.innerHTML = MENU.map(cat => `
+    <section class="menu-section" id="cat-${cat.id}" data-cat="${cat.id}">
+      <div class="section-head">
+        <span class="section-num">${cat.num}</span>
+        <h2>${cat.title}</h2>
+      </div>
+      <p class="section-desc">${cat.desc}</p>
+      <div class="item-grid">
+        ${cat.items.map((it, idx) => renderItemCard(cat.id, idx, it)).join('')}
+      </div>
+    </section>
+  `).join('');
+}
+
+function initPanelState(base, it){
+  if(panelState[base]) return panelState[base];
+  const selections = {};
+  (it.opts || []).forEach(g => {
+    selections[g.key] = g.type === 'radio' ? g.options[0] : new Set();
+  });
+  panelState[base] = { selections, qty: 1 };
+  return panelState[base];
+}
+
+function renderItemCard(catId, idx, it){
+  const base = itemKeyBase(catId, idx);
+  const hasOpts = it.opts && it.opts.length;
+  const priceLabel = (it.from ? 'à partir de ' : '') + fmt(it.p);
+  return `
+    <div class="item-card">
+      <div class="item-top">
+        <div class="item-main">
+          <div class="item-name">${it.n}</div>
+          ${it.d ? `<div class="item-desc">${it.d}</div>` : ''}
+        </div>
+        <div class="item-side">
+          <div class="item-price">${priceLabel}</div>
+          <div id="ctrl-${base}">${renderSimpleControl(catId, idx, it)}</div>
+        </div>
+      </div>
+      ${hasOpts ? `<div class="options-panel" id="panel-${base}">${renderOptionsPanel(catId, idx, it)}</div>` : ''}
+    </div>
+  `;
+}
+
+function renderSimpleControl(catId, idx, it){
+  const base = itemKeyBase(catId, idx);
+  if(it.opts && it.opts.length){
+    return `<button class="options-btn" onclick="toggleOptions('${base}')">Choisir</button>`;
+  }
+  const line = cart.find(l => l.key === base && !l.hasOpts);
+  if(line){
+    return `<div class="qty-stepper">
+      <button onclick="changeSimpleQty('${catId}', ${idx}, -1)">−</button>
+      <span class="qty-val">${line.qty}</span>
+      <button onclick="changeSimpleQty('${catId}', ${idx}, 1)">+</button>
+    </div>`;
+  }
+  return `<button class="add-btn" onclick="addSimple('${catId}', ${idx})">+</button>`;
+}
+
+function addSimple(catId, idx){
+  const it = MENU.find(c=>c.id===catId).items[idx];
+  const base = itemKeyBase(catId, idx);
+  let line = cart.find(l => l.key === base && !l.hasOpts);
+  if(line){ line.qty++; }
+  else{ cart.push({ key: base, hasOpts:false, name: it.n, selections: [], unitPrice: it.p, qty: 1 }); }
+  document.getElementById('ctrl-'+base).innerHTML = renderSimpleControl(catId, idx, it);
+  updateCartUI(); renderDrawer(); pulseCart();
+}
+function changeSimpleQty(catId, idx, delta){
+  const base = itemKeyBase(catId, idx);
+  const line = cart.find(l => l.key === base && !l.hasOpts);
+  if(!line) return;
+  line.qty += delta;
+  if(line.qty <= 0) cart = cart.filter(l => l !== line);
+  const it = MENU.find(c=>c.id===catId).items[idx];
+  document.getElementById('ctrl-'+base).innerHTML = renderSimpleControl(catId, idx, it);
+  updateCartUI(); renderDrawer();
+}
+
+function toggleOptions(base){
+  const panel = document.getElementById('panel-'+base);
+  panel.classList.toggle('open');
+}
+
+function renderOptionsPanel(catId, idx, it){
+  const base = itemKeyBase(catId, idx);
+  const state = initPanelState(base, it);
+  const groupsHtml = it.opts.map(g => {
+    const choicesHtml = g.options.map(o => {
+      const isObj = typeof o === 'object';
+      const name = isObj ? o.name : o;
+      const price = isObj ? o.price : 0;
+      let selected;
+      if(g.type === 'radio') selected = state.selections[g.key] === name;
+      else selected = state.selections[g.key].has(name);
+      return `<span class="opt-chip${isObj?' extra':''}${selected?' sel':''}"
+        onclick="toggleOption('${base}','${g.key}','${g.type}','${name.replace(/'/g,"\\'")}')">
+        ${name}${price ? `<span class="opt-price">+${fmt(price)}</span>` : ''}
+      </span>`;
+    }).join('');
+    return `<div class="opt-group">
+      <div class="opt-label">${g.label}${g.required ? ' <span class="opt-required">·  requis</span>' : ''}</div>
+      <div class="opt-choices">${choicesHtml}</div>
+    </div>`;
+  }).join('');
+
+  return `
+    ${groupsHtml}
+    <div class="opt-panel-foot">
+      <div class="opt-qty">
+        <button onclick="panelQty('${base}', -1)">−</button>
+        <span id="panelqty-${base}">${state.qty}</span>
+        <button onclick="panelQty('${base}', 1)">+</button>
+      </div>
+      <div class="opt-running-total" id="opttotal-${base}">${fmt(computePanelPrice(catId, idx, it))}</div>
+      <button class="opt-add-btn" onclick="addWithOptions('${catId}', ${idx})">Ajouter</button>
+    </div>
+  `;
+}
+
+function toggleOption(base, groupKey, type, name){
+  const state = panelState[base];
+  if(type === 'radio'){
+    state.selections[groupKey] = name;
+  }else{
+    const set = state.selections[groupKey];
+    if(set.has(name)) set.delete(name); else set.add(name);
+  }
+  const [catId, idxStr] = base.split('__');
+  const idx = parseInt(idxStr);
+  const it = MENU.find(c=>c.id===catId).items[idx];
+  document.getElementById('panel-'+base).innerHTML = renderOptionsPanel(catId, idx, it);
+  document.getElementById('panel-'+base).classList.add('open');
+}
+
+function panelQty(base, delta){
+  const state = panelState[base];
+  state.qty = Math.max(1, state.qty + delta);
+  document.getElementById('panelqty-'+base).textContent = state.qty;
+  const [catId, idxStr] = base.split('__');
+  const idx = parseInt(idxStr);
+  const it = MENU.find(c=>c.id===catId).items[idx];
+  document.getElementById('opttotal-'+base).textContent = fmt(computePanelPrice(catId, idx, it));
+}
+
+function computePanelPrice(catId, idx, it){
+  const base = itemKeyBase(catId, idx);
+  const state = panelState[base];
+  let unit = it.p;
+  it.opts.forEach(g => {
+    if(g.type === 'checkbox'){
+      state.selections[g.key].forEach(name => {
+        const opt = g.options.find(o => o.name === name);
+        if(opt) unit += opt.price;
+      });
+    }
+  });
+  return unit * state.qty;
+}
+
+function addWithOptions(catId, idx){
+  const it = MENU.find(c=>c.id===catId).items[idx];
+  const base = itemKeyBase(catId, idx);
+  const state = panelState[base];
+  let unit = it.p;
+  const selections = [];
+  it.opts.forEach(g => {
+    if(g.type === 'radio'){
+      const val = state.selections[g.key];
+      selections.push({ label: g.label, value: val, price: 0 });
+    }else{
+      state.selections[g.key].forEach(name => {
+        const opt = g.options.find(o => o.name === name);
+        if(opt){ unit += opt.price; selections.push({ label: g.label, value: name, price: opt.price }); }
+      });
+    }
+  });
+  const cartKey = base + '__' + Date.now() + '__' + Math.random().toString(36).slice(2,7);
+  cart.push({ key: cartKey, hasOpts:true, name: it.n, selections, unitPrice: unit, qty: state.qty });
+
+  delete panelState[base];
+  document.getElementById('panel-'+base).classList.remove('open');
+  document.getElementById('panel-'+base).innerHTML = renderOptionsPanel(catId, idx, it);
+
+  updateCartUI(); renderDrawer(); pulseCart();
+}
+
+function cartTotal(){ return cart.reduce((s,l) => s + l.unitPrice*l.qty, 0); }
+function cartCount(){ return cart.reduce((s,l) => s + l.qty, 0); }
+
+function updateCartUI(){
+  const c = cartCount();
+  document.getElementById('cartCount').textContent = c;
+  document.getElementById('fabCount').textContent = c;
+  document.getElementById('fabCart').classList.toggle('show', c > 0 && !drawerOpen);
+}
+
+function pulseCart(){
+  const btn = document.querySelector('.cart-btn');
+  btn.style.transform = 'scale(1.08)';
+  setTimeout(()=> btn.style.transform = 'scale(1)', 140);
+}
+
+/* ===================== LOYALTY PROGRAM ===================== */
+const TIERS = [
+  { name:'Bronze', min:0, perk:'Cumul de points sur chaque commande' },
+  { name:'Argent', min:500, perk:'-5% sur l\'addition, valable en salle' },
+  { name:'Or', min:1500, perk:'Dessert offert + accès prioritaire au rooftop' },
+];
+function loadLoyalty(){
+  try{ return JSON.parse(localStorage.getItem('lng_loyalty') || 'null'); }catch(e){ return null; }
+}
+function saveLoyalty(p){ try{ localStorage.setItem('lng_loyalty', JSON.stringify(p)); }catch(e){} }
+function currentTier(points){
+  let t = TIERS[0];
+  for(const tier of TIERS){ if(points >= tier.min) t = tier; }
+  return t;
+}
+function nextTier(points){
+  return TIERS.find(t => t.min > points) || null;
+}
+function genCode(){
+  return 'LNG-' + Math.random().toString(36).slice(2,6).toUpperCase();
+}
+function scrollToLoyalty(){
+  document.getElementById('loyalty').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function joinLoyalty(){
+  const name = (document.getElementById('lpName')?.value || '').trim();
+  const phone = (document.getElementById('lpPhone')?.value || '').trim();
+  if(!name || !phone){ alert('Merci de renseigner votre nom et votre numéro.'); return; }
+  const p = { name, phone, code: genCode(), points: 0 };
+  saveLoyalty(p);
+  renderLoyalty();
+  if(sb){ sb.from('loyalty_members').insert({ code:p.code, name:p.name, phone:p.phone, points:0 }).then(()=>{}); }
+}
+function leaveLoyalty(){
+  try{ localStorage.removeItem('lng_loyalty'); }catch(e){}
+  renderLoyalty();
+}
+function addLoyaltyPoints(total){
+  const p = loadLoyalty();
+  if(!p) return 0;
+  const earned = Math.floor(total / 100);
+  p.points += earned;
+  saveLoyalty(p);
+  renderLoyalty();
+  if(sb){ sb.from('loyalty_members').update({ points: p.points }).eq('code', p.code).then(()=>{}); }
+  return earned;
+}
+function renderLoyalty(){
+  const profile = loadLoyalty();
+  const pill = document.getElementById('loyaltyPill');
+  const panel = document.getElementById('loyaltyPanel');
+  if(!profile){
+    pill.innerHTML = `🏆 Fidélité`;
+    panel.innerHTML = `
+      <div class="lp-name">Rejoindre le programme</div>
+      <div class="lp-code" style="color:#8FA294">Gratuit · sans engagement</div>
+      <div class="lp-form">
+        <input type="text" id="lpName" placeholder="Nom et prénom">
+        <input type="tel" id="lpPhone" placeholder="Numéro WhatsApp">
+      </div>
+      <button class="lp-join-btn" onclick="joinLoyalty()">Créer ma carte</button>
+    `;
+    return;
+  }
+  pill.innerHTML = `🏆 <span class="pts">${profile.points} pts</span>`;
+  const tier = currentTier(profile.points);
+  const next = nextTier(profile.points);
+  const span = next ? (next.min - tier.min) : 1;
+  const progressInTier = next ? (profile.points - tier.min) : span;
+  const pct = Math.min(100, Math.round((progressInTier / span) * 100));
+  panel.innerHTML = `
+    <div class="lp-points">${profile.points}</div>
+    <div class="lp-points-label">Points · Niveau ${tier.name}</div>
+    <div class="lp-progress-track"><div class="lp-progress-fill" style="width:${pct}%"></div></div>
+    <div class="lp-progress-label">${next ? `${next.min - profile.points} pts avant le niveau ${next.name}` : 'Niveau maximum atteint'}</div>
+    <div class="lp-name">${profile.name}</div>
+    <div class="lp-code">${profile.code} · ${tier.perk}</div>
+    <button class="lp-logout" onclick="leaveLoyalty()">Changer de carte</button>
+  `;
+}
+
+let drawerOpen = false;
+let orderMode = 'livraison';
+
+function openCart(){
+  drawerOpen = true;
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('fabCart').classList.remove('show');
+  renderDrawer();
+}
+function closeCart(){
+  drawerOpen = false;
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+  updateCartUI();
+}
+function setMode(mode){ orderMode = mode; renderDrawer(); }
+
+function removeLine(key){
+  const line = cart.find(l => l.key === key);
+  cart = cart.filter(l => l.key !== key);
+  if(line && !line.hasOpts){
+    const [catId, idxStr] = key.split('__');
+    const idx = parseInt(idxStr);
+    const it = MENU.find(c=>c.id===catId).items[idx];
+    const ctrl = document.getElementById('ctrl-'+key);
+    if(ctrl) ctrl.innerHTML = renderSimpleControl(catId, idx, it);
+  }
+  updateCartUI(); renderDrawer();
+}
+
+function renderDrawer(){
+  const body = document.getElementById('drawerBody');
+  const foot = document.getElementById('drawerFoot');
+
+  if(cart.length === 0){
+    body.innerHTML = `<div class="empty-cart">🍽️<br><br>Votre panier est vide.<br>Ajoutez des plats depuis le menu.</div>`;
+    foot.innerHTML = '';
+    return;
+  }
+
+  body.innerHTML = cart.map(l => {
+    const optsText = l.selections && l.selections.length
+      ? l.selections.map(s => `${s.label} : ${s.value}${s.price ? ' (+'+fmt(s.price)+')' : ''}`).join(' · ')
+      : '';
+    return `
+    <div class="cart-line">
+      <div class="cart-line-main">
+        <div class="cart-line-name">${l.qty} × ${l.name}</div>
+        ${optsText ? `<div class="cart-line-opts">${optsText}</div>` : ''}
+        <div class="cart-line-price">${fmt(l.unitPrice*l.qty)}</div>
+        <button class="cart-line-remove" onclick="removeLine('${l.key}')">Retirer</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  foot.innerHTML = `
+    <div class="mode-toggle">
+      <button class="mode-btn ${orderMode==='livraison'?'sel':''}" onclick="setMode('livraison')">Livraison</button>
+      <button class="mode-btn ${orderMode==='emporter'?'sel':''}" onclick="setMode('emporter')">À emporter</button>
+      <button class="mode-btn ${orderMode==='surplace'?'sel':''}" onclick="setMode('surplace')">Sur place</button>
+    </div>
+    <div class="field">
+      <label>Votre nom</label>
+      <input type="text" id="custName" placeholder="Nom et prénom">
+    </div>
+    ${orderMode==='livraison' ? `
+    <div class="field">
+      <label>Adresse de livraison</label>
+      <input type="text" id="custAddress" placeholder="Quartier, repère...">
+    </div>` : ''}
+    <div class="field">
+      <label>Note (optionnel)</label>
+      <textarea id="custNote" placeholder="Allergies, préférences, heure souhaitée..."></textarea>
+    </div>
+    <div class="sum-row"><span>Articles</span><span>${cartCount()}</span></div>
+    <div class="sum-total"><span>Total</span><span>${fmt(cartTotal())}</span></div>
+    <button class="whatsapp-btn" onclick="sendWhatsApp()">📲 Commander via WhatsApp</button>
+    <div class="drawer-hint">Votre commande sera envoyée par WhatsApp au (+228) 91 07 21 25 pour confirmation.</div>
+  `;
+}
+
+function sendWhatsApp(){
+  const name = (document.getElementById('custName')?.value || '').trim();
+  const address = (document.getElementById('custAddress')?.value || '').trim();
+  const note = (document.getElementById('custNote')?.value || '').trim();
+
+  const modeLabel = { livraison: 'Livraison', emporter: 'À emporter', surplace: 'Sur place' }[orderMode];
+
+  let msg = `Bonjour La Note Gourmande, je souhaite passer une commande 🎵🍽️\n\n`;
+  msg += `*Mode :* ${modeLabel}\n`;
+  if(name) msg += `*Nom :* ${name}\n`;
+  if(orderMode === 'livraison' && address) msg += `*Adresse :* ${address}\n`;
+  msg += `\n*Commande :*\n`;
+  cart.forEach(l => {
+    const optsText = l.selections && l.selections.length
+      ? ' [' + l.selections.map(s => `${s.label}: ${s.value}`).join(', ') + ']'
+      : '';
+    msg += `• ${l.qty} × ${l.name}${optsText} — ${fmt(l.unitPrice*l.qty)}\n`;
+  });
+  msg += `\n*Total : ${fmt(cartTotal())}*\n`;
+  if(note) msg += `\nNote : ${note}\n`;
+
+  const profile = loadLoyalty();
+  if(profile){
+    const earned = addLoyaltyPoints(cartTotal());
+    msg += `\n*Carte fidélité :* ${profile.code} (+${earned} pts, total ${profile.points} pts)\n`;
+  }
+
+  saveOrderToDB({ name, address, note, mode: orderMode, profile });
+
+  const url = `https://wa.me/22891072125?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+/* Best-effort: record the order in Supabase so it shows up in the admin dashboard.
+   Never blocks or breaks the WhatsApp flow if it fails (e.g. offline). */
+async function saveOrderToDB({ name, address, note, mode, profile }){
+  if(!sb) return;
+  try{
+    const { data: order, error } = await sb.from('orders').insert({
+      customer_name: name, phone: profile ? profile.phone : '', mode, address, note,
+      total: cartTotal(), loyalty_code: profile ? profile.code : '',
+    }).select().single();
+    if(error || !order) return;
+    const rows = cart.map(l => ({
+      order_id: order.id, name: l.name, qty: l.qty, unit_price: l.unitPrice, selections: l.selections || [],
+    }));
+    if(rows.length) await sb.from('order_items').insert(rows);
+  }catch(e){ /* offline or RLS issue: order still reaches the restaurant via WhatsApp */ }
+}
+
+function scrollToCat(id){
+  document.getElementById('cat-'+id).scrollIntoView({behavior:'smooth', block:'start'});
+}
+function setupScrollSpy(){
+  const sections = [...document.querySelectorAll('.menu-section')];
+  const pills = [...document.querySelectorAll('.cat-pill')];
+  const headerH = 150;
+  function onScroll(){
+    let current = sections[0]?.dataset.cat;
+    for(const s of sections){
+      const rect = s.getBoundingClientRect();
+      if(rect.top - headerH <= 0) current = s.dataset.cat;
+    }
+    pills.forEach(p => p.classList.toggle('active', p.dataset.cat === current));
+    const activePill = document.querySelector('.cat-pill.active');
+    if(activePill) activePill.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+  }
+  window.addEventListener('scroll', onScroll, { passive:true });
+  onScroll();
+}
+
+renderNav();
+renderMenu();
+setupScrollSpy();
+updateCartUI();
+renderLoyalty();
+loadMenuFromDB();
+</script>
+</body>
+</html>

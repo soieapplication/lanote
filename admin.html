@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Note Gourmande — Espace Admin</title>
+<link rel="icon" href="assets/iconorange.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --cream:#FBF7F3; --sand:#E7E2DB; --ink:#2A2520; --ink-soft:#6F665E; --line:#EFE7DD;
+    --orange:#DE6326; --orange-deep:#C24E17; --green:#206947; --green-deep:#183F2C;
+    --green-night:#1A2721; --red:#C0392B; --gold:#E9D9C7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'Montserrat',sans-serif;-webkit-font-smoothing:antialiased}
+  h1,h2,h3,.serif{font-family:'Playfair Display',serif}
+  img{max-width:100%}
+
+  /* ---- Login screen ---- */
+  #loginScreen{
+    min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;
+    background:var(--green-night);
+  }
+  .login-box{
+    width:100%;max-width:380px;background:var(--cream);border-radius:16px;padding:38px 32px;
+    box-shadow:0 30px 70px rgba(0,0,0,.35);
+  }
+  .login-box img{height:40px;margin-bottom:18px}
+  .login-box h1{font-size:22px;margin:0 0 6px}
+  .login-box p{color:var(--ink-soft);font-size:13px;margin:0 0 24px;line-height:1.6}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
+  .field input{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:12px 13px;font-family:'Montserrat',sans-serif;
+    font-size:13.5px;background:#fff;color:var(--ink);
+  }
+  .login-btn{
+    width:100%;background:var(--green);color:#fff;border:none;border-radius:9px;padding:14px;
+    font-weight:800;font-size:13.5px;letter-spacing:.3px;cursor:pointer;margin-top:6px;transition:background .15s;
+  }
+  .login-btn:hover{background:var(--green-deep)}
+  .login-btn:disabled{opacity:.55;cursor:not-allowed}
+  .login-error{color:var(--red);font-size:12.5px;margin-top:12px;line-height:1.6;display:none}
+  .login-error.show{display:block}
+
+  /* ---- App shell ---- */
+  #appScreen{display:none;min-height:100dvh}
+  #appScreen.show{display:flex}
+  .sidebar{
+    flex:none;width:230px;background:var(--green-night);color:#EFE9DF;padding:26px 18px;
+    display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100dvh;
+  }
+  .sidebar-brand{display:flex;align-items:center;gap:10px;margin-bottom:28px;padding:0 8px}
+  .sidebar-brand img{height:30px}
+  .sidebar-brand span{font-family:'Playfair Display',serif;font-style:italic;font-size:15px}
+  .nav-btn{
+    text-align:left;background:none;border:none;color:#B9C9BC;padding:12px 12px;border-radius:9px;
+    font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .15s;
+  }
+  .nav-btn:hover{background:rgba(255,255,255,.06);color:#fff}
+  .nav-btn.active{background:var(--orange);color:#fff}
+  .sidebar-foot{margin-top:auto;padding:0 8px}
+  .signout-btn{background:none;border:1px solid rgba(255,255,255,.18);color:#B9C9BC;padding:10px 12px;border-radius:9px;font-size:12px;cursor:pointer;width:100%}
+  .signout-btn:hover{border-color:var(--orange);color:#fff}
+
+  .main{flex:1;padding:32px 34px;min-width:0;overflow-x:hidden}
+  .page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;margin-bottom:24px;flex-wrap:wrap}
+  .page-head h2{font-size:24px;margin:0}
+  .page-head p{color:var(--ink-soft);font-size:13px;margin:4px 0 0}
+
+  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:26px}
+  .stat-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .stat-card .lbl{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px}
+  .stat-card .val{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:800;color:var(--ink)}
+  .stat-card .val.orange{color:var(--orange)}
+  .stat-card .val.green{color:var(--green-deep)}
+
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+  thead th{
+    text-align:left;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-soft);
+    padding:12px 14px;background:var(--sand);border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  tbody td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--line);vertical-align:top}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:var(--cream)}
+  .table-wrap{overflow-x:auto;border-radius:12px}
+
+  .badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:10.5px;font-weight:800;letter-spacing:.2px}
+  .badge.nouvelle{background:#FCE9DE;color:var(--orange-deep)}
+  .badge.en_preparation{background:#FFF3CD;color:#8a6d1b}
+  .badge.pret{background:#DCEFE3;color:var(--green-deep)}
+  .badge.livree{background:#E4E4E4;color:#555}
+  .badge.annulee{background:#F8DADA;color:var(--red)}
+
+  select.status-select{
+    border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;font-family:'Montserrat',sans-serif;
+    background:#fff;color:var(--ink);
+  }
+  .btn-sm{
+    border:1px solid var(--line);background:#fff;color:var(--ink);padding:7px 12px;border-radius:8px;
+    font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;
+  }
+  .btn-sm:hover{border-color:var(--orange);color:var(--orange)}
+  .btn-sm.danger:hover{border-color:var(--red);color:var(--red)}
+  .btn-primary-sm{
+    background:var(--green);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:12px;
+    font-weight:700;cursor:pointer;
+  }
+  .btn-primary-sm:hover{background:var(--green-deep)}
+
+  .toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+  .toolbar input, .toolbar select{
+    border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:12.5px;font-family:'Montserrat',sans-serif;background:#fff;
+  }
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(20,17,14,.5);z-index:80;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-overlay.show{display:flex}
+  .modal-box{background:var(--cream);border-radius:14px;padding:26px;width:100%;max-width:460px;max-height:88vh;overflow-y:auto}
+  .modal-box h3{margin:0 0 16px;font-size:18px}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+
+  .empty-state{text-align:center;padding:60px 20px;color:var(--ink-soft);font-size:13px}
+  .low-stock{color:var(--red);font-weight:800}
+  .toast{
+    position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:12px 18px;border-radius:9px;
+    font-size:12.5px;font-weight:600;z-index:100;opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateY(0)}
+
+  @media(max-width:820px){
+    #appScreen.show{flex-direction:column}
+    .sidebar{width:100%;height:auto;position:relative;flex-direction:row;overflow-x:auto;padding:14px}
+    .sidebar-brand{display:none}
+    .sidebar-foot{margin-top:0;margin-left:auto}
+    .main{padding:20px}
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <img src="assets/logofull.png" alt="La Note Gourmande">
+    <h1>Espace Admin</h1>
+    <p>Connectez-vous pour gérer les commandes, le menu, le stock et les rapports de ventes.</p>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="loginEmail" placeholder="vous@lanotegourmande.com" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Mot de passe</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Se connecter</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div id="appScreen">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><img src="assets/iconwhite.png"><span>La Note Gourmande</span></div>
+    <button class="nav-btn active" data-page="dashboard" onclick="goPage('dashboard')">📊 Tableau de bord</button>
+    <button class="nav-btn" data-page="orders" onclick="goPage('orders')">🧾 Commandes</button>
+    <button class="nav-btn" data-page="items" onclick="goPage('items')">🍽️ Articles du menu</button>
+    <button class="nav-btn" data-page="inventory" onclick="goPage('inventory')">📦 Stock</button>
+    <button class="nav-btn" data-page="loyalty" onclick="goPage('loyalty')">🏆 Fidélité</button>
+    <button class="nav-btn" data-page="reports" onclick="goPage('reports')">📈 Rapports</button>
+    <div class="sidebar-foot">
+      <button class="signout-btn" onclick="doLogout()">Déconnexion</button>
+    </div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box" id="modalBox"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== SUPABASE ===================== */
+const SUPABASE_URL = 'https://ehkukujznqrlqrqawnff.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoa3VrdWp6bnFybHFycWF3bmZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzOTE2MzQsImV4cCI6MjEwMzk2NzYzNH0.dW_aH97-iTsRZmNFV9X9obb6CP6Pbv3C9kWIT9O3MOo';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let session = null;
+let currentPage = 'dashboard';
+let cache = { orders:[], items:[], categories:[], inventory:[], loyalty:[] };
+
+function fmt(n){ return Number(n||0).toLocaleString('fr-FR') + ' F'; }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+/* ===================== AUTH ===================== */
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const err = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+  err.classList.remove('show');
+  if(!email || !password){ err.textContent = 'Veuillez renseigner l\'e-mail et le mot de passe.'; err.classList.add('show'); return; }
+  btn.disabled = true; btn.textContent = 'Connexion...';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  btn.disabled = false; btn.textContent = 'Se connecter';
+  if(error){ err.textContent = 'Connexion refusée : ' + error.message; err.classList.add('show'); return; }
+
+  const { data: profile } = await sb.from('admin_profiles').select('*').eq('id', data.user.id).maybeSingle();
+  if(!profile){
+    err.textContent = 'Ce compte n\'a pas d\'accès administrateur. Contactez le gérant.';
+    err.classList.add('show');
+    await sb.auth.signOut();
+    return;
+  }
+  session = data.session;
+  enterApp();
+}
+async function doLogout(){
+  await sb.auth.signOut();
+  session = null;
+  document.getElementById('appScreen').classList.remove('show');
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+async function checkExistingSession(){
+  const { data } = await sb.auth.getSession();
+  if(data.session){
+    const { data: profile } = await sb.from('admin_profiles').select('*').eq('id', data.session.user.id).maybeSingle();
+    if(profile){ session = data.session; enterApp(); return; }
+  }
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+function enterApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').classList.add('show');
+  goPage('dashboard');
+}
+
+/* ===================== NAV ===================== */
+function goPage(page){
+  currentPage = page;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  const renderers = { dashboard: renderDashboard, orders: renderOrders, items: renderItems, inventory: renderInventory, loyalty: renderLoyaltyAdmin, reports: renderReports };
+  renderers[page]();
+}
+
+/* ===================== DASHBOARD ===================== */
+async function renderDashboard(){
+  const main = document.getElementById('main');
+  main.innerHTML = `<div class="page-head"><div><h2>Tableau de bord</h2><p>Vue d'ensemble de l'activité du jour.</p></div></div><div id="dashBody">Chargement...</div>`;
+
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const { data: orders } = await sb.from('orders').select('*').order('created_at', { ascending:false });
+  cache.orders = orders || [];
+
+  const todays = cache.orders.filter(o => new Date(o.created_at) >= todayStart);
+  const revenueToday = todays.reduce((s,o)=>s+o.total,0);
+  const pending = cache.orders.filter(o => o.status === 'nouvelle' || o.status === 'en_preparation');
+  const { count: itemCount } = await sb.from('menu_items').select('*', { count:'exact', head:true });
+  const { data: lowStock } = await sb.from('inventory_items').select('*');
+  const lowStockCount = (lowStock||[]).filter(i => i.quantity <= i.low_stock_threshold).length;
+
+  document.getElementById('dashBody').innerHTML = `
+    <div class="stat-row">
+      <div class="stat-card"><div class="lbl">Commandes aujourd'hui</div><div class="val">${todays.length}</div></div>
+      <div class="stat-card"><div class="lbl">Chiffre du jour</div><div class="val green">${fmt(revenueToday)}</div></div>
+      <div class="stat-card"><div class="lbl">Commandes en attente</div><div class="val orange">${pending.length}</div></div>
+      <div class="stat-card"><div class="lbl">Articles au menu</div><div class="val">${itemCount ?? '—'}</div></div>
+      <div class="stat-card"><div class="lbl">Stock bas</div><div class="val ${lowStockCount?'orange':''}">${lowStockCount}</div></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Client</th><th>Mode</th><th>Total</th><th>Statut</th><th>Reçue</th></tr></thead>
+      <tbody>
+        ${cache.orders.slice(0,8).map(o => `
+          <tr>
+            <td>${o.customer_name || '—'}</td>
+            <td>${o.mode}</td>
+            <td>${fmt(o.total)}</td>
+            <td><span class="badge ${o.status}">${statusLabel(o.status)}</span></td>
+            <td>${new Date(o.created_at).toLocaleString('fr-FR')}</td>
+          </tr>`).join('') || `<tr><td colspan="5" class="empty-state">Aucune commande pour le moment.</td></tr>`}
+      </tbody>
+    </table></div>
+  `;
+}
+function statusLabel(s){
+  return { nouvelle:'Nouvelle', en_preparation:'En préparation', pret:'Prête', livree:'Livrée / servie', annulee:'Annulée' }[s] || s;
+}
+
+/* ===================== ORDERS ===================== */
+async function renderOrders(){
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="page-head"><div><h2>Commandes</h2><p>Traitez les commandes reçues depuis le site.</p></div></div>
+    <div class="toolbar">
+      <select id="orderFilter" onchange="renderOrdersTable()">
+        <option value="all">Tous les statuts</option>
+        <option value="nouvelle">Nouvelle</option>
+        <option value="en_preparation">En préparation</option>
+        <option value="pret">Prête</option>
+        <option value="livree">Livrée / servie</option>
+        <option value="annulee">Annulée</option>
+      </select>
+    </div>
+    <div id="ordersTableWrap">Chargement...</div>
+  `;
+  const { data: orders, error } = await sb.from('orders').select('*, order_items(*)').order('created_at', { ascending:false });
+  if(error){ document.getElementById('ordersTableWrap').innerHTML = `<div class="empty-state">Erreur : ${error.message}</div>`; return; }
+  cache.orders = orders || [];
+  renderOrdersTable();
+}
+function renderOrdersTable(){
+  const filter = document.getElementById('orderFilter')?.value || 'all';
+  const list = filter === 'all' ? cache.orders : cache.orders.filter(o => o.status === filter);
+  document.getElementById('ordersTableWrap').innerHTML = `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Client</th><th>Téléphone</th><th>Mode</th><th>Articles</th><th>Total</th><th>Statut</th><th>Reçue</th><th></th></tr></thead>
+      <tbody>
+        ${list.map(o => `
+          <tr>
+            <td>${o.customer_name || '—'}</td>
+            <td>${o.phone || '—'}</td>
+            <td>${o.mode}${o.address ? '<br><span style="color:var(--ink-soft);font-size:11px">'+o.address+'</span>' : ''}</td>
+            <td style="max-width:260px">${(o.order_items||[]).map(li => `${li.qty}× ${li.name}`).join(', ')}</td>
+            <td>${fmt(o.total)}</td>
+            <td>
+              <select class="status-select" onchange="updateOrderStatus('${o.id}', this.value)">
+                ${['nouvelle','en_preparation','pret','livree','annulee'].map(s => `<option value="${s}" ${s===o.status?'selected':''}>${statusLabel(s)}</option>`).join('')}
+              </select>
+            </td>
+            <td>${new Date(o.created_at).toLocaleString('fr-FR')}</td>
+            <td><button class="btn-sm danger" onclick="deleteOrder('${o.id}')">Suppr.</button></td>
+          </tr>`).join('') || `<tr><td colspan="8" class="empty-state">Aucune commande.</td></tr>`}
+      </tbody>
+    </table></div>
+  `;
+}
+async function updateOrderStatus(id, status){
+  const { error } = await sb.from('orders').update({ status }).eq('id', id);
+  if(error){ showToast('Erreur : ' + error.message); return; }
+  const o = cache.orders.find(x => x.id === id); if(o) o.status = status;
+  showToast('Statut mis à jour.');
+}
+async function deleteOrder(id){
+  if(!confirm('Supprimer cette commande ?')) return;
+  const { error } = await sb.from('orders').delete().eq('id', id);
+  if(error){ showToast('Erreur : ' + error.message); return; }
+  cache.orders = cache.orders.filter(o => o.id !== id);
+  renderOrdersTable();
+  showToast('Commande supprimée.');
+}
+
+/* ===================== ITEMS ===================== */
+async function renderItems(){
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="page-head">
+      <div><h2>Articles du menu</h2><p>Ajoutez, modifiez ou désactivez des plats.</p></div>
+      <button class="btn-primary-sm" onclick="openItemModal()">+ Nouvel article</button>
+    </div>
+    <div class="toolbar">
+      <select id="catFilter" onchange="renderItemsTable()"><option value="all">Toutes les catégories</option></select>
+      <input type="text" id="itemSearch" placeholder="Rechercher un article..." oninput="renderItemsTable()">
+    </div>
+    <div id="itemsTableWrap">Chargement...</div>
+  `;
+  const [{ data: cats }, { data: items }] = await Promise.all([
+    sb.from('menu_categories').select('*').order('sort_order'),
+    sb.from('menu_items').select('*, menu_categories(title)').order('name'),
+  ]);
+  cache.categories = cats || [];
+  cache.items = items || [];
+  document.getElementById('catFilter').innerHTML += cache.categories.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+  renderItemsTable();
+}
+function renderItemsTable(){
+  const catFilter = document.getElementById('catFilter').value;
+  const q = document.getElementById('itemSearch').value.toLowerCase();
+  let list = cache.items;
+  if(catFilter !== 'all') list = list.filter(i => i.category_id === catFilter);
+  if(q) list = list.filter(i => i.name.toLowerCase().includes(q));
+  document.getElementById('itemsTableWrap').innerHTML = `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Article</th><th>Catégorie</th><th>Prix</th><th>Actif</th><th></th></tr></thead>
+      <tbody>
+        ${list.map(it => `
+          <tr>
+            <td><strong>${it.name}</strong>${it.description ? '<br><span style="color:var(--ink-soft);font-size:11.5px">'+it.description+'</span>' : ''}</td>
+            <td>${it.menu_categories?.title || '—'}</td>
+            <td>${it.price_from ? 'dès ' : ''}${fmt(it.price)}</td>
+            <td>${it.active ? '✅' : '⛔'}</td>
+            <td style="display:flex;gap:8px">
+              <button class="btn-sm" onclick='openItemModal(${JSON.stringify(it).replace(/'/g,"&#39;")})'>Modifier</button>
+              <button class="btn-sm danger" onclick="deleteItem('${it.id}')">Suppr.</button>
+            </td>
+          </tr>`).join('') || `<tr><td colspan="5" class="empty-state">Aucun article.</td></tr>`}
+      </tbody>
+    </table></div>
+  `;
+}
+function openItemModal(item){
+  const isEdit = !!item;
+  document.getElementById('modalBox').innerHTML = `
+    <h3>${isEdit ? 'Modifier l\'article' : 'Nouvel article'}</h3>
+    <div class="field"><label>Nom</label><input id="mItemName" value="${isEdit ? item.name.replace(/"/g,'&quot;') : ''}"></div>
+    <div class="field"><label>Description</label><input id="mItemDesc" value="${isEdit ? (item.description||'').replace(/"/g,'&quot;') : ''}"></div>
+    <div class="field"><label>Catégorie</label>
+      <select id="mItemCat">${cache.categories.map(c => `<option value="${c.id}" ${isEdit && item.category_id===c.id ? 'selected':''}>${c.title}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Prix (F CFA)</label><input type="number" id="mItemPrice" value="${isEdit ? item.price : ''}"></div>
+    <div class="field"><label><input type="checkbox" id="mItemActive" ${!isEdit || item.active ? 'checked' : ''} style="width:auto;margin-right:8px">Actif (visible sur le site)</label></div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary-sm" onclick="saveItem(${isEdit ? `'${item.id}'` : 'null'})">Enregistrer</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+async function saveItem(id){
+  const payload = {
+    name: document.getElementById('mItemName').value.trim(),
+    description: document.getElementById('mItemDesc').value.trim(),
+    category_id: document.getElementById('mItemCat').value,
+    price: parseInt(document.getElementById('mItemPrice').value || '0', 10),
+    active: document.getElementById('mItemActive').checked,
+  };
+  if(!payload.name){ showToast('Le nom est requis.'); return; }
+  const { error } = id ? await sb.from('menu_items').update(payload).eq('id', id) : await sb.from('menu_items').insert(payload);
+  if(error){ showToast('Erreur : ' + error.message); return; }
+  closeModal(); showToast('Article enregistré.'); renderItems();
+}
+async function deleteItem(id){
+  if(!confirm('Supprimer cet article du menu ?')) return;
+  const { error } = await sb.from('menu_items').delete().eq('id', id);
+  if(error){ showToast('Erreur : ' + error.message); return; }
+  cache.items = cache.items.filter(i => i.id !== id);
+  renderItemsTable(); showToast('Article supprimé.');
+}
+
+/* ===================== INVENTORY ===================== */
+async function renderInventory(){
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="page-head">
+      <div><h2>Stock</h2><p>Suivez les quantités disponibles et les seuils d'alerte.</p></div>
+      <button class="btn-primary-sm" onclick="openInventoryModal()">+ Nouvel article de stock</button>
+    </div>
+    <div id="invTableWrap">Chargement...</div>
+  `;
+  const { data, error } = await sb.from('inventory_items').select('*').order('name');
+  if(error){ document.getElementById('invTableWrap').innerHTML = `<div class="empty-state">Erreur : ${error.message}</div>`; return; }
+  cache.inventory = data || [];
+  renderInventoryTable();
+}
+function renderInventoryTable(){
+  document.getElementById('invTableWrap').innerHTML = `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Article</th><th>Quantité</th><th>Unité</th><th>Seuil d'alerte</th><th></th></tr></thead>
+      <tbody>
+        ${cache.inventory.map(i => `
+          <tr>
+            <td><strong>${i.name}</strong></td>
+            <td class="${i.quantity <= i.low_stock_threshold ? 'low-stock' : ''}">${i.quantity}${i.quantity <= i.low_stock_threshold ? ' ⚠' : ''}</td>
+            <td>${i.unit}</td>
+            <td>${i.low_stock_threshold}</td>
+            <td style="display:flex;gap:8px">
+              <button class="btn-sm" onclick='openInventoryModal(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Modifier</button>
+              <button class="btn-sm danger" onclick="deleteInventory('${i.id}')">Suppr.</button>
+            </td>
+          </tr>`).join('') || `<tr><td colspan="5" class="empty-state">Aucun article de stock.</td></tr>`}
+      </tbody>
+    </table></div>
+  `;
+}
+function openInventoryModal(item){
+  const isEdit = !!item;
+  document.getElementById('modalBox').innerHTML = `
+    <h3>${isEdit ? 'Modifier le stock' : 'Nouvel article de stock'}</h3>
+    <div class="field"><label>Nom</label><input id="mInvName" value="${isEdit ? item.name.replace(/"/g,'&quot;') : ''}"></div>
+    <div class="field"><label>Quantité</label><input type="number" id="mInvQty" value="${isEdit ? item.quantity : 0}"></div>
+    <div class="field"><label>Unité</label><input id="mInvUnit" value="${isEdit ? item.unit : 'unité'}"></div>
+    <div class="field"><label>Seuil d'alerte</label><input type="number" id="mInvThreshold" value="${isEdit ? item.low_stock_threshold : 0}"></div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary-sm" onclick="saveInventory(${isEdit ? `'${item.id}'` : 'null'})">Enregistrer</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+async function saveInventory(id){
+  const payload = {
+    name: document.getElementById('mInvName').value.trim(),
+    quantity: parseFloat(document.getElementById('mInvQty').value || '0'),
+    unit: document.getElementById('mInvUnit').value.trim() || 'unité',
+    low_stock_threshold: parseFloat(document.getElementById('mInvThreshold').value || '0'),
+    updated_at: new Date().toISOString(),
+  };
+  if(!payload.name){ showToast('Le nom est requis.'); return; }
+  const { error } = id ? await sb.from('inventory_items').update(payload).eq('id', id) : await sb.from('inventory_items').insert(payload);
+  if(error){ showToast('Erreur : ' + error.message); return; }
+  closeModal(); showToast('Stock enregistré.'); renderInventory();
+}
+async function deleteInventory(id){
+  if(!confirm('Supprimer cet article de stock ?')) return;
+  const { error } = await sb.from('inventory_items').delete().eq('id', id);
+  if(error){ showToast('Erreur : ' + error.message); return; }
+  cache.inventory = cache.inventory.filter(i => i.id !== id);
+  renderInventoryTable(); showToast('Supprimé.');
+}
+
+/* ===================== LOYALTY (admin view) ===================== */
+async function renderLoyaltyAdmin(){
+  const main = document.getElementById('main');
+  main.innerHTML = `<div class="page-head"><div><h2>Fidélité</h2><p>Membres du programme La Note Fidèle.</p></div></div><div id="loyTableWrap">Chargement...</div>`;
+  const { data, error } = await sb.from('loyalty_members').select('*').order('points', { ascending:false });
+  if(error){ document.getElementById('loyTableWrap').innerHTML = `<div class="empty-state">Erreur : ${error.message}</div>`; return; }
+  cache.loyalty = data || [];
+  document.getElementById('loyTableWrap').innerHTML = `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Nom</th><th>Téléphone</th><th>Code</th><th>Points</th></tr></thead>
+      <tbody>
+        ${cache.loyalty.map(m => `<tr><td>${m.name}</td><td>${m.phone}</td><td>${m.code}</td><td>${m.points}</td></tr>`).join('') || `<tr><td colspan="4" class="empty-state">Aucun membre.</td></tr>`}
+      </tbody>
+    </table></div>
+  `;
+}
+
+/* ===================== REPORTS ===================== */
+async function renderReports(){
+  const main = document.getElementById('main');
+  main.innerHTML = `<div class="page-head"><div><h2>Rapports</h2><p>Ventes des 30 derniers jours.</p></div></div><div id="repBody">Chargement...</div>`;
+  const since = new Date(); since.setDate(since.getDate() - 30);
+  const { data: orders, error } = await sb.from('orders').select('*, order_items(*)').gte('created_at', since.toISOString());
+  if(error){ document.getElementById('repBody').innerHTML = `<div class="empty-state">Erreur : ${error.message}</div>`; return; }
+
+  const valid = (orders||[]).filter(o => o.status !== 'annulee');
+  const totalRevenue = valid.reduce((s,o)=>s+o.total,0);
+  const avgTicket = valid.length ? Math.round(totalRevenue/valid.length) : 0;
+
+  const byDay = {};
+  valid.forEach(o => {
+    const day = new Date(o.created_at).toLocaleDateString('fr-FR');
+    byDay[day] = (byDay[day]||0) + o.total;
+  });
+  const days = Object.keys(byDay).sort((a,b)=> new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
+
+  const byItem = {};
+  valid.forEach(o => (o.order_items||[]).forEach(li => { byItem[li.name] = (byItem[li.name]||0) + li.qty; }));
+  const topItems = Object.entries(byItem).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+  document.getElementById('repBody').innerHTML = `
+    <div class="stat-row">
+      <div class="stat-card"><div class="lbl">Chiffre d'affaires (30j)</div><div class="val green">${fmt(totalRevenue)}</div></div>
+      <div class="stat-card"><div class="lbl">Commandes (30j)</div><div class="val">${valid.length}</div></div>
+      <div class="stat-card"><div class="lbl">Panier moyen</div><div class="val orange">${fmt(avgTicket)}</div></div>
+    </div>
+    <h3 style="font-size:15px;margin:22px 0 10px">Ventes par jour</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Jour</th><th>Chiffre d'affaires</th></tr></thead>
+      <tbody>${days.map(d => `<tr><td>${d}</td><td>${fmt(byDay[d])}</td></tr>`).join('') || `<tr><td colspan="2" class="empty-state">Aucune donnée.</td></tr>`}</tbody>
+    </table></div>
+    <h3 style="font-size:15px;margin:22px 0 10px">Articles les plus vendus</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Article</th><th>Quantité vendue</th></tr></thead>
+      <tbody>${topItems.map(([name,qty]) => `<tr><td>${name}</td><td>${qty}</td></tr>`).join('') || `<tr><td colspan="2" class="empty-state">Aucune donnée.</td></tr>`}</tbody>
+    </table></div>
+  `;
+}
+
+document.getElementById('modalOverlay').addEventListener('click', (e)=>{ if(e.target.id==='modalOverlay') closeModal(); });
+checkExistingSession();
+</script>
+</body>
+</html>
