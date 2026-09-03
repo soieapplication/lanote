@@ -163,12 +163,12 @@
 <div id="appScreen">
   <aside class="sidebar">
     <div class="sidebar-brand"><img src="assets/iconwhite.png"><span>La Note Gourmande</span></div>
-    <button class="nav-btn active" data-page="dashboard" onclick="goPage('dashboard')">📊 Tableau de bord</button>
-    <button class="nav-btn" data-page="orders" onclick="goPage('orders')">🧾 Commandes</button>
-    <button class="nav-btn" data-page="items" onclick="goPage('items')">🍽️ Articles du menu</button>
-    <button class="nav-btn" data-page="inventory" onclick="goPage('inventory')">📦 Stock</button>
-    <button class="nav-btn" data-page="loyalty" onclick="goPage('loyalty')">🏆 Fidélité</button>
-    <button class="nav-btn" data-page="reports" onclick="goPage('reports')">📈 Rapports</button>
+    <button class="nav-btn active" data-page="dashboard" onclick="goPage('dashboard')">Tableau de bord</button>
+    <button class="nav-btn" data-page="orders" onclick="goPage('orders')">Commandes</button>
+    <button class="nav-btn" data-page="items" onclick="goPage('items')">Articles du menu</button>
+    <button class="nav-btn" data-page="inventory" onclick="goPage('inventory')">Stock</button>
+    <button class="nav-btn" data-page="loyalty" onclick="goPage('loyalty')">Fidélité</button>
+    <button class="nav-btn" data-page="reports" onclick="goPage('reports')">Rapports</button>
     <div class="sidebar-foot">
       <button class="signout-btn" onclick="doLogout()">Déconnexion</button>
     </div>
@@ -394,7 +394,7 @@ function renderItemsTable(){
             <td><strong>${it.name}</strong>${it.description ? '<br><span style="color:var(--ink-soft);font-size:11.5px">'+it.description+'</span>' : ''}</td>
             <td>${it.menu_categories?.title || '—'}</td>
             <td>${it.price_from ? 'dès ' : ''}${fmt(it.price)}</td>
-            <td>${it.active ? '✅' : '⛔'}</td>
+            <td><span class="badge ${it.active ? 'pret' : 'annulee'}">${it.active ? 'Actif' : 'Inactif'}</span></td>
             <td style="display:flex;gap:8px">
               <button class="btn-sm" onclick='openItemModal(${JSON.stringify(it).replace(/'/g,"&#39;")})'>Modifier</button>
               <button class="btn-sm danger" onclick="deleteItem('${it.id}')">Suppr.</button>
@@ -467,7 +467,7 @@ function renderInventoryTable(){
         ${cache.inventory.map(i => `
           <tr>
             <td><strong>${i.name}</strong></td>
-            <td class="${i.quantity <= i.low_stock_threshold ? 'low-stock' : ''}">${i.quantity}${i.quantity <= i.low_stock_threshold ? ' ⚠' : ''}</td>
+            <td class="${i.quantity <= i.low_stock_threshold ? 'low-stock' : ''}">${i.quantity}${i.quantity <= i.low_stock_threshold ? ' · stock bas' : ''}</td>
             <td>${i.unit}</td>
             <td>${i.low_stock_threshold}</td>
             <td style="display:flex;gap:8px">

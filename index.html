@@ -45,6 +45,7 @@
     position:sticky;top:0;z-index:40;background:rgba(251,247,243,.92);backdrop-filter:blur(10px);
     border-bottom:1px solid var(--line);
   }
+  html{--header-h:73px}
   .head-row{
     max-width:1180px;margin:0 auto;padding:14px 22px;
     display:flex;align-items:center;justify-content:space-between;gap:18px;
@@ -108,7 +109,7 @@
   }
 
   .cat-nav-wrap{
-    position:sticky;top:73px;z-index:30;background:var(--cream);border-bottom:1px solid var(--line);
+    position:sticky;top:var(--header-h,73px);z-index:30;background:var(--cream);border-bottom:1px solid var(--line);
   }
   .cat-nav{
     max-width:1180px;margin:0 auto;padding:14px 22px;display:flex;gap:10px;overflow-x:auto;
@@ -311,22 +312,75 @@
   }
   .lp-join-btn:hover{background:var(--orange-deep)}
   .lp-logout{background:none;border:none;color:#8FA294;font-size:11px;cursor:pointer;text-decoration:underline;margin-top:10px;padding:0}
+  .lp-history-btn{
+    width:100%;background:transparent;color:#EFE9DF;border:1px solid rgba(255,255,255,.22);border-radius:9px;padding:11px;
+    font-weight:700;font-size:12px;cursor:pointer;margin-top:10px;transition:border-color .15s,background .15s;
+  }
+  .lp-history-btn:hover{border-color:var(--orange);background:rgba(222,99,38,.1)}
+
+  /* ===== Motion & entrance animations ===== */
+  @media (prefers-reduced-motion: no-preference){
+    .item-card{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}
+    .item-card:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(42,37,32,.08);border-color:var(--sand)}
+    .loyalty-card{transition:transform .3s ease}
+    .cat-pill{transition:all .18s ease}
+    .btn-primary, .btn-ghost, .opt-add-btn, .whatsapp-btn, .lp-join-btn{transition:transform .15s ease,background .15s ease,box-shadow .15s ease}
+    .btn-primary:active, .opt-add-btn:active, .whatsapp-btn:active, .lp-join-btn:active{transform:scale(.97)}
+    .add-btn:active, .qty-stepper button:active{transform:scale(.9)}
+  }
+
+  /* ===== Account modal ===== */
+  .account-overlay{position:fixed;inset:0;background:rgba(20,17,14,.5);z-index:85;opacity:0;pointer-events:none;transition:opacity .25s}
+  .account-overlay.open{opacity:1;pointer-events:auto}
+  .account-box{
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-46%);width:min(480px,92vw);max-height:82vh;overflow-y:auto;
+    background:var(--cream);border-radius:16px;padding:26px 24px;z-index:90;opacity:0;pointer-events:none;
+    transition:opacity .25s,transform .25s;box-shadow:0 30px 70px rgba(0,0,0,.3);
+  }
+  .account-box.open{opacity:1;transform:translate(-50%,-50%);pointer-events:auto}
+  .account-box h3{margin:0 0 4px;font-size:19px}
+  .account-sub{color:var(--ink-soft);font-size:12.5px;margin:0 0 18px}
+  .order-row{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+  .order-row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px}
+  .order-row-date{font-size:11px;color:var(--ink-soft)}
+  .order-row-status{font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:20px;background:var(--sand);color:var(--ink-soft)}
+  .order-row-items{font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin-bottom:6px}
+  .order-row-total{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:13px;color:var(--green-deep)}
+
+  /* ===== Responsive ===== */
+  @media(max-width:900px){
+    .head-row{padding:12px 16px}
+    .tel-pill span.tel-text{display:none}
+    .hero{flex-direction:column;text-align:center;padding:40px 18px 30px}
+    .hero-copy{max-width:100%}
+    .hero p{margin-left:auto;margin-right:auto}
+    .hero-ctas{justify-content:center}
+    .hero-note{width:220px;height:220px}
+    .loyalty-card{padding:28px 22px}
+    .loyalty-panel{width:100%}
+  }
+  @media(max-width:560px){
+    .head-actions{gap:8px}
+    .loyalty-pill span:not(.pts){display:none}
+    .cart-btn{padding:10px 14px}
+    .tel-pill{padding:8px 10px}
+  }
 </style>
 </head>
 <body>
 
 <div class="notice">Réservation conseillée · <span>(+228) 91 07 21 25</span> · Adidogomé Apédokoé, en face de la station Sanol</div>
 
-<header>
+<header id="siteHeader">
   <div class="head-row">
     <div class="brand">
       <img src="assets/logofull.png" alt="La Note Gourmande">
     </div>
     <div class="head-actions">
-      <a class="tel-pill" href="tel:+22891072125">📞 91 07 21 25</a>
-      <button class="loyalty-pill" onclick="scrollToLoyalty()" id="loyaltyPill">🏆 Fidélité</button>
+      <a class="tel-pill" href="tel:+22891072125"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> <span class="tel-text">91 07 21 25</span></a>
+      <button class="loyalty-pill" onclick="scrollToLoyalty()" id="loyaltyPill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M17 5h3a2 2 0 0 1-2 4M7 5H4a2 2 0 0 0 2 4"/></svg> Fidélité</button>
       <button class="cart-btn" onclick="openCart()">
-        🛒 Panier <span class="cart-count" id="cartCount">0</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Panier <span class="cart-count" id="cartCount">0</span>
       </button>
     </div>
   </div>
@@ -364,6 +418,9 @@
   </div>
 </section>
 
+<div class="account-overlay" id="accountOverlay" onclick="closeAccount()"></div>
+<div class="account-box" id="accountBox"></div>
+
 <div class="cat-nav-wrap">
   <div class="cat-nav" id="catNav"></div>
 </div>
@@ -391,12 +448,11 @@
   </div>
   <div class="foot-bottom">
     <span>© La Note Gourmande</span>
-    <span>Charte graphique by We Are Aurum</span>
   </div>
 </footer>
 
 <button class="fab-cart" id="fabCart" onclick="openCart()">
-  🛒 Voir le panier <span class="fab-badge" id="fabCount">0</span>
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Voir le panier <span class="fab-badge" id="fabCount">0</span>
 </button>
 
 <div class="overlay" id="overlay" onclick="closeCart()"></div>
@@ -622,6 +678,8 @@ async function loadMenuFromDB(){
     renderNav();
     renderMenu();
     setupScrollSpy();
+    setupSectionReveal();
+    syncHeaderHeight();
   }catch(e){ /* keep static fallback */ }
 }
 
@@ -847,6 +905,7 @@ function pulseCart(){
 }
 
 /* ===================== LOYALTY PROGRAM ===================== */
+const LOYALTY_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M17 5h3a2 2 0 0 1-2 4M7 5H4a2 2 0 0 0 2 4"/></svg>';
 const TIERS = [
   { name:'Bronze', min:0, perk:'Cumul de points sur chaque commande' },
   { name:'Argent', min:500, perk:'-5% sur l\'addition, valable en salle' },
@@ -898,7 +957,7 @@ function renderLoyalty(){
   const pill = document.getElementById('loyaltyPill');
   const panel = document.getElementById('loyaltyPanel');
   if(!profile){
-    pill.innerHTML = `🏆 Fidélité`;
+    pill.innerHTML = LOYALTY_ICON + ' Fidélité';
     panel.innerHTML = `
       <div class="lp-name">Rejoindre le programme</div>
       <div class="lp-code" style="color:#8FA294">Gratuit · sans engagement</div>
@@ -910,7 +969,7 @@ function renderLoyalty(){
     `;
     return;
   }
-  pill.innerHTML = `🏆 <span class="pts">${profile.points} pts</span>`;
+  pill.innerHTML = LOYALTY_ICON + ` <span class="pts">${profile.points} pts</span>`;
   const tier = currentTier(profile.points);
   const next = nextTier(profile.points);
   const span = next ? (next.min - tier.min) : 1;
@@ -923,8 +982,47 @@ function renderLoyalty(){
     <div class="lp-progress-label">${next ? `${next.min - profile.points} pts avant le niveau ${next.name}` : 'Niveau maximum atteint'}</div>
     <div class="lp-name">${profile.name}</div>
     <div class="lp-code">${profile.code} · ${tier.perk}</div>
+    <button class="lp-history-btn" onclick="openAccount()">Mes commandes</button>
     <button class="lp-logout" onclick="leaveLoyalty()">Changer de carte</button>
   `;
+}
+
+/* ===================== CLIENT ACCOUNT (order history) ===================== */
+async function openAccount(){
+  const profile = loadLoyalty();
+  if(!profile) return;
+  const overlay = document.getElementById('accountOverlay');
+  const box = document.getElementById('accountBox');
+  overlay.classList.add('open'); box.classList.add('open');
+  box.innerHTML = `<h3>Mes commandes</h3><p class="account-sub">Chargement...</p>`;
+  if(!sb){ box.innerHTML = `<h3>Mes commandes</h3><p class="account-sub">Indisponible hors ligne.</p>`; return; }
+  try{
+    const { data: orders, error } = await sb.rpc('get_customer_orders', { p_code: profile.code });
+    if(error) throw error;
+    box.innerHTML = `
+      <h3>Mes commandes</h3>
+      <p class="account-sub">${profile.name} · ${profile.points} pts · carte ${profile.code}</p>
+      ${(orders||[]).map(o => `
+        <div class="order-row">
+          <div class="order-row-head">
+            <span class="order-row-date">${new Date(o.created_at).toLocaleString('fr-FR')}</span>
+            <span class="order-row-status">${statusLabelFr(o.status)}</span>
+          </div>
+          <div class="order-row-items">${(o.items||[]).map(it => `${it.qty}× ${it.name}`).join(', ') || 'Détail indisponible'}</div>
+          <div class="order-row-total">${fmt(o.total)}</div>
+        </div>
+      `).join('') || `<p class="account-sub">Aucune commande enregistrée pour l'instant.</p>`}
+    `;
+  }catch(e){
+    box.innerHTML = `<h3>Mes commandes</h3><p class="account-sub">Impossible de charger l'historique pour le moment.</p>`;
+  }
+}
+function statusLabelFr(s){
+  return { nouvelle:'Nouvelle', en_preparation:'En préparation', pret:'Prête', livree:'Livrée / servie', annulee:'Annulée' }[s] || s;
+}
+function closeAccount(){
+  document.getElementById('accountOverlay').classList.remove('open');
+  document.getElementById('accountBox').classList.remove('open');
 }
 
 let drawerOpen = false;
@@ -963,7 +1061,7 @@ function renderDrawer(){
   const foot = document.getElementById('drawerFoot');
 
   if(cart.length === 0){
-    body.innerHTML = `<div class="empty-cart">🍽️<br><br>Votre panier est vide.<br>Ajoutez des plats depuis le menu.</div>`;
+    body.innerHTML = `<div class="empty-cart">Votre panier est vide.<br>Ajoutez des plats depuis le menu.</div>`;
     foot.innerHTML = '';
     return;
   }
@@ -1004,7 +1102,7 @@ function renderDrawer(){
     </div>
     <div class="sum-row"><span>Articles</span><span>${cartCount()}</span></div>
     <div class="sum-total"><span>Total</span><span>${fmt(cartTotal())}</span></div>
-    <button class="whatsapp-btn" onclick="sendWhatsApp()">📲 Commander via WhatsApp</button>
+    <button class="whatsapp-btn" onclick="sendWhatsApp()"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.44 1.32 4.94L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.95 6.45 17.5 2 12.04 2zm5.83 14.05c-.24.68-1.4 1.32-1.93 1.4-.5.08-1.12.11-1.81-.11-.42-.13-.96-.31-1.65-.6-2.9-1.25-4.8-4.16-4.94-4.35-.14-.19-1.18-1.57-1.18-3 0-1.42.75-2.13 1.02-2.42.27-.29.58-.36.78-.36l.55.01c.18.01.42-.07.65.5.24.58.82 2 .89 2.15.07.14.11.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.13-.28.28-.12.55.16.27.71 1.17 1.53 1.9 1.05.94 1.94 1.23 2.21 1.37.27.14.43.12.59-.07.16-.19.68-.79.86-1.06.18-.27.36-.22.6-.13.24.09 1.53.72 1.79.85.27.14.44.2.51.31.07.11.07.65-.17 1.33z"/></svg> Commander via WhatsApp</button>
     <div class="drawer-hint">Votre commande sera envoyée par WhatsApp au (+228) 91 07 21 25 pour confirmation.</div>
   `;
 }
@@ -1016,7 +1114,7 @@ function sendWhatsApp(){
 
   const modeLabel = { livraison: 'Livraison', emporter: 'À emporter', surplace: 'Sur place' }[orderMode];
 
-  let msg = `Bonjour La Note Gourmande, je souhaite passer une commande 🎵🍽️\n\n`;
+  let msg = `Bonjour La Note Gourmande, je souhaite passer une commande.\n\n`;
   msg += `*Mode :* ${modeLabel}\n`;
   if(name) msg += `*Nom :* ${name}\n`;
   if(orderMode === 'livraison' && address) msg += `*Adresse :* ${address}\n`;
@@ -1059,22 +1157,54 @@ async function saveOrderToDB({ name, address, note, mode, profile }){
   }catch(e){ /* offline or RLS issue: order still reaches the restaurant via WhatsApp */ }
 }
 
+/* Keep the sticky category bar glued right under the header, even when the
+   header's own height changes (text wrapping on narrow screens, font load,
+   etc.) — this is what was causing the jump/"glitch" while scrolling up. */
+function syncHeaderHeight(){
+  const header = document.getElementById('siteHeader');
+  if(!header) return;
+  document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
+}
+window.addEventListener('resize', syncHeaderHeight, { passive:true });
+window.addEventListener('load', syncHeaderHeight);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(syncHeaderHeight);
+
+function setupSectionReveal(){
+  // Intentionally a no-op: an opacity-based scroll-reveal was tried here and
+  // dropped — content must always render immediately and reliably, never
+  // depend on an IntersectionObserver firing. Micro-interactions (hover,
+  // press) still provide motion via CSS transitions on cards and buttons.
+}
+
 function scrollToCat(id){
   document.getElementById('cat-'+id).scrollIntoView({behavior:'smooth', block:'start'});
 }
 function setupScrollSpy(){
   const sections = [...document.querySelectorAll('.menu-section')];
   const pills = [...document.querySelectorAll('.cat-pill')];
+  const nav = document.getElementById('catNav');
   const headerH = 150;
+  let lastCat = null;
   function onScroll(){
     let current = sections[0]?.dataset.cat;
     for(const s of sections){
       const rect = s.getBoundingClientRect();
       if(rect.top - headerH <= 0) current = s.dataset.cat;
     }
+    if(current === lastCat) return;
+    lastCat = current;
     pills.forEach(p => p.classList.toggle('active', p.dataset.cat === current));
     const activePill = document.querySelector('.cat-pill.active');
-    if(activePill) activePill.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+    // Scroll only the horizontal category strip into view — never the page
+    // itself. (A previous version called activePill.scrollIntoView() here,
+    // which can also nudge the document's own vertical scroll and fight the
+    // user's own scrolling — that was the "glitch" while scrolling up.)
+    if(activePill && nav){
+      const navRect = nav.getBoundingClientRect();
+      const pillRect = activePill.getBoundingClientRect();
+      const delta = (pillRect.left + pillRect.width/2) - (navRect.left + navRect.width/2);
+      nav.scrollBy({ left: delta, behavior: 'smooth' });
+    }
   }
   window.addEventListener('scroll', onScroll, { passive:true });
   onScroll();
@@ -1083,6 +1213,8 @@ function setupScrollSpy(){
 renderNav();
 renderMenu();
 setupScrollSpy();
+setupSectionReveal();
+syncHeaderHeight();
 updateCartUI();
 renderLoyalty();
 loadMenuFromDB();
