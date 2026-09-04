@@ -217,7 +217,11 @@
     display:inline-flex;flex-direction:column;align-items:center;gap:2px;
   }
   .confirm-points-val{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:800;color:var(--orange)}
-  .confirm-points-label{font-size:11px;color:#B9C9BC}
+  .confirm-points-label{font-size:11px;color:#B9C9BC;max-width:220px;text-align:center;line-height:1.5}
+  .confirm-points-pending .confirm-points-val{color:#E9C46A}
+  .order-row-payment{font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:20px}
+  .order-row-payment.en_attente{background:#FFF3CD;color:#8a6d1b}
+  .order-row-payment.payee{background:#DCEFE3;color:var(--green-deep)}
   .cart-line{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
   .cart-line-main{flex:1;min-width:0}
   .cart-line-name{font-weight:700;font-size:13.5px;margin-bottom:2px}
@@ -961,21 +965,21 @@ function leaveLoyalty(){
   try{ localStorage.removeItem('lng_loyalty'); }catch(e){}
   renderLoyalty();
 }
-/* Credits points server-side for a given loyalty code (used at checkout —
-   works even for a code typed manually, not just the locally logged-in
-   profile). Returns { earned, total } (total = new points balance on the
-   card), or null if it couldn't be credited. */
-async function creditLoyaltyPoints(code, total){
-  if(!sb || !code) return null;
-  const earned = Math.floor(total / 100);
-  if(earned <= 0) return null;
+/* Points are no longer credited from the storefront — the restaurant staff
+   confirms payment first (admin dashboard), which is what actually credits
+   the card server-side. This just refreshes the locally-cached balance from
+   the server, so a returning client always sees their real, current total
+   (including any points confirmed since their last visit). */
+async function refreshLoyaltyFromServer(){
+  const profile = loadLoyalty();
+  if(!profile || !sb) return;
   try{
-    const { data, error } = await sb.rpc('add_loyalty_points', { p_code: code, p_amount: earned });
-    if(error) return null;
-    const profile = loadLoyalty();
-    if(profile && profile.code === code){ profile.points = data; saveLoyalty(profile); renderLoyalty(); }
-    return { earned, total: data };
-  }catch(e){ return null; }
+    const { data, error } = await sb.rpc('get_customer_points', { p_code: profile.code });
+    if(error || !data || !data.length) return;
+    profile.points = data[0].points;
+    saveLoyalty(profile);
+    renderLoyalty();
+  }catch(e){ /* keep last known local value */ }
 }
 function renderLoyalty(){
   const profile = loadLoyalty();
@@ -1022,11 +1026,13 @@ async function openAccount(){
   box.innerHTML = `<h3>Mes commandes</h3><p class="account-sub">Chargement...</p>`;
   if(!sb){ box.innerHTML = `<h3>Mes commandes</h3><p class="account-sub">Indisponible hors ligne.</p>`; return; }
   try{
-    const { data: orders, error } = await sb.rpc('get_customer_orders', { p_code: profile.code });
+    await refreshLoyaltyFromServer();
+    const fresh = loadLoyalty() || profile;
+    const { data: orders, error } = await sb.rpc('get_customer_orders', { p_code: fresh.code });
     if(error) throw error;
     box.innerHTML = `
       <h3>Mes commandes</h3>
-      <p class="account-sub">${profile.name} · ${profile.points} pts · carte ${profile.code}</p>
+      <p class="account-sub">${fresh.name} · ${fresh.points} pts · carte ${fresh.code}</p>
       ${(orders||[]).map(o => `
         <div class="order-row">
           <div class="order-row-head">
@@ -1034,7 +1040,10 @@ async function openAccount(){
             <span class="order-row-status">${statusLabelFr(o.status)}</span>
           </div>
           <div class="order-row-items">${(o.items||[]).map(it => `${it.qty}× ${it.name}`).join(', ') || 'Détail indisponible'}</div>
-          <div class="order-row-total">${fmt(o.total)}</div>
+          <div class="order-row-head" style="margin-top:6px">
+            <div class="order-row-total">${fmt(o.total)}</div>
+            <span class="order-row-payment ${o.payment_status}">${o.payment_status === 'payee' ? `+${o.points_earned} pts crédités` : 'Points en attente'}</span>
+          </div>
         </div>
       `).join('') || `<p class="account-sub">Aucune commande enregistrée pour l'instant.</p>`}
     `;
@@ -1162,38 +1171,34 @@ async function sendWhatsApp(){
   if(note) msg += `\nNote : ${note}\n`;
 
   const orderTotal = cartTotal();
-  let credit = null;
-  if(loyaltyCode){
-    credit = await creditLoyaltyPoints(loyaltyCode, orderTotal);
-    msg += credit
-      ? `\n*Carte fidélité :* ${loyaltyCode} (+${credit.earned} pts, total ${credit.total} pts)\n`
-      : `\n*Carte fidélité :* ${loyaltyCode}\n`;
-  }
+  const pendingPts = loyaltyCode ? Math.floor(orderTotal / 100) : 0;
+  if(loyaltyCode) msg += `\n*Carte fidélité :* ${loyaltyCode} (${pendingPts} pts en attente de confirmation)\n`;
 
   saveOrderToDB({ name, address, note, mode: orderMode, loyaltyCode });
 
   const url = `https://wa.me/22891072125?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
 
-  showOrderConfirmation(orderTotal, loyaltyCode, credit);
+  showOrderConfirmation(orderTotal, loyaltyCode, pendingPts);
   cart = [];
   updateCartUI();
 }
 
-/* Shown right after the WhatsApp tab opens, so the client sees their
-   updated loyalty balance immediately instead of having to go check the
-   loyalty panel separately. */
-function showOrderConfirmation(orderTotal, loyaltyCode, credit){
+/* Shown right after the WhatsApp tab opens. Points are NOT credited yet —
+   the restaurant confirms payment first — so this shows a "pending" state.
+   The client sees the real, credited total the next time they open their
+   loyalty panel or order history (refreshLoyaltyFromServer). */
+function showOrderConfirmation(orderTotal, loyaltyCode, pendingPts){
   const body = document.getElementById('drawerBody');
   const foot = document.getElementById('drawerFoot');
   body.innerHTML = `
     <div class="empty-cart">
       <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:8px">Commande envoyée !</div>
       <div>Total : ${fmt(orderTotal)}</div>
-      ${credit ? `
-        <div class="confirm-points">
-          <div class="confirm-points-val">${credit.total} pts</div>
-          <div class="confirm-points-label">+${credit.earned} pts · carte ${loyaltyCode}</div>
+      ${loyaltyCode ? `
+        <div class="confirm-points confirm-points-pending">
+          <div class="confirm-points-val">${pendingPts} pts</div>
+          <div class="confirm-points-label">En attente · crédités dès confirmation du paiement par le restaurant</div>
         </div>
       ` : ''}
       <div style="margin-top:14px;font-size:12px">Confirmez l'envoi du message sur WhatsApp pour finaliser votre commande.</div>
@@ -1279,6 +1284,7 @@ setupSectionReveal();
 syncHeaderHeight();
 updateCartUI();
 renderLoyalty();
+refreshLoyaltyFromServer();
 loadMenuFromDB();
 </script>
 </body>

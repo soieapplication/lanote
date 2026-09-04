@@ -405,7 +405,7 @@ function renderOrdersTable(){
   const list = filter === 'all' ? cache.orders : cache.orders.filter(o => o.status === filter);
   document.getElementById('ordersTableWrap').innerHTML = `
     <div class="table-wrap"><table>
-      <thead><tr><th>Client</th><th>Téléphone</th><th>Mode</th><th>Articles</th><th>Total</th><th>Statut</th><th>Reçue</th><th></th></tr></thead>
+      <thead><tr><th>Client</th><th>Téléphone</th><th>Mode</th><th>Articles</th><th>Total</th><th>Statut</th><th>Paiement</th><th>Reçue</th><th></th></tr></thead>
       <tbody>
         ${list.map(o => `
           <tr>
@@ -419,12 +419,25 @@ function renderOrdersTable(){
                 ${['nouvelle','en_preparation','pret','livree','annulee'].map(s => `<option value="${s}" ${s===o.status?'selected':''}>${statusLabel(s)}</option>`).join('')}
               </select>
             </td>
+            <td>
+              ${o.payment_status === 'payee'
+                ? `<span class="badge pret">Payée${o.loyalty_code ? ` · +${o.points_earned} pts` : ''}</span>`
+                : `<span class="badge nouvelle">En attente</span>${o.loyalty_code ? `<br><button class="btn-sm" style="margin-top:6px" onclick="confirmPayment('${o.id}')">Confirmer le paiement</button>` : `<br><button class="btn-sm" style="margin-top:6px" onclick="confirmPayment('${o.id}')">Marquer payée</button>`}`}
+            </td>
             <td>${new Date(o.created_at).toLocaleString('fr-FR')}</td>
             <td><button class="btn-sm danger" onclick="deleteOrder('${o.id}')">Suppr.</button></td>
-          </tr>`).join('') || `<tr><td colspan="8" class="empty-state">Aucune commande.</td></tr>`}
+          </tr>`).join('') || `<tr><td colspan="9" class="empty-state">Aucune commande.</td></tr>`}
       </tbody>
     </table></div>
   `;
+}
+async function confirmPayment(id){
+  const { data: earned, error } = await sb.rpc('confirm_order_payment', { p_order_id: id });
+  if(error){ showToast('Erreur : ' + error.message); return; }
+  const o = cache.orders.find(x => x.id === id);
+  if(o){ o.payment_status = 'payee'; o.points_earned = earned || 0; }
+  renderOrdersTable();
+  showToast(earned ? `Paiement confirmé — ${earned} pts crédités.` : 'Paiement confirmé.');
 }
 async function updateOrderStatus(id, status){
   const { error } = await sb.from('orders').update({ status }).eq('id', id);
