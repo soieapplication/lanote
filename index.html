@@ -1212,13 +1212,19 @@ function showOrderConfirmation(orderTotal, loyaltyCode, pendingPts){
 async function saveOrderToDB({ name, address, note, mode, loyaltyCode }){
   if(!sb) return;
   try{
-    const { data: order, error } = await sb.from('orders').insert({
-      customer_name: name, phone: loadLoyalty()?.phone || '', mode, address, note,
+    // Generate the ID client-side rather than asking Postgres to hand the
+    // inserted row back (INSERT ... RETURNING / .select()) — the orders
+    // table only lets admins SELECT, and Postgres's RLS also checks SELECT
+    // visibility for anything a RETURNING clause would return, so an anon
+    // insert-with-return fails even though the plain insert is allowed.
+    const orderId = crypto.randomUUID();
+    const { error } = await sb.from('orders').insert({
+      id: orderId, customer_name: name, phone: loadLoyalty()?.phone || '', mode, address, note,
       total: cartTotal(), loyalty_code: loyaltyCode || '',
-    }).select().single();
-    if(error || !order) return;
+    });
+    if(error) return;
     const rows = cart.map(l => ({
-      order_id: order.id, name: l.name, qty: l.qty, unit_price: l.unitPrice, selections: l.selections || [],
+      order_id: orderId, name: l.name, qty: l.qty, unit_price: l.unitPrice, selections: l.selections || [],
     }));
     if(rows.length) await sb.from('order_items').insert(rows);
   }catch(e){ /* offline or RLS issue: order still reaches the restaurant via WhatsApp */ }
