@@ -53,8 +53,10 @@ $$;
 grant execute on function confirm_order_payment(uuid) to authenticated;
 
 -- Let a client see, per past order, whether payment/points are still
--- pending or already confirmed.
-create or replace function get_customer_orders(p_code text)
+-- pending or already confirmed. Must be dropped first: Postgres won't let
+-- CREATE OR REPLACE change a function's return columns in place.
+drop function if exists get_customer_orders(text);
+create function get_customer_orders(p_code text)
 returns table (
   id uuid,
   mode text,
