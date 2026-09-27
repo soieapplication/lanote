@@ -370,9 +370,9 @@
 
 <header id="siteHeader">
   <div class="head-row">
-    <div class="brand">
+    <a class="brand" href="index.html" aria-label="La Note Gourmande — accueil">
       <img src="assets/logofull.png" alt="La Note Gourmande">
-    </div>
+    </a>
     <div class="head-actions">
       <a class="tel-pill" href="tel:+22891072125"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> <span class="tel-text">91 07 21 25</span></a>
       <button class="loyalty-pill" onclick="scrollToLoyalty()" id="loyaltyPill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M17 5h3a2 2 0 0 1-2 4M7 5H4a2 2 0 0 0 2 4"/></svg> Fidélité</button>
@@ -408,7 +408,7 @@
       <div class="tier-row">
         <span class="tier-chip bronze">Bronze · 0 pt</span>
         <span class="tier-chip argent">Argent · 500 pts — -5% sur l'addition</span>
-        <span class="tier-chip or">Or · 1500 pts — dessert offert + priorité rooftop</span>
+        <span class="tier-chip or">Or · 1500 pts — un plat au choix offert</span>
       </div>
     </div>
     <div class="loyalty-panel" id="loyaltyPanel"></div>
@@ -910,7 +910,7 @@ const LOYALTY_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none
 const TIERS = [
   { name:'Bronze', min:0, perk:'Cumul de points sur chaque commande' },
   { name:'Argent', min:500, perk:'-5% sur l\'addition, valable en salle' },
-  { name:'Or', min:1500, perk:'Dessert offert + accès prioritaire au rooftop' },
+  { name:'Or', min:1500, perk:'Un plat au choix offert' },
 ];
 function loadLoyalty(){
   try{ return JSON.parse(localStorage.getItem('lng_loyalty') || 'null'); }catch(e){ return null; }
@@ -1040,7 +1040,7 @@ async function renderClaimButtons(profile){
     claims = data || [];
   }catch(e){ /* show claim buttons anyway; claim() will catch duplicates */ }
 
-  const tierLabel = { argent: 'Argent · -5% sur l\'addition', or: 'Or · dessert offert + priorité rooftop' };
+  const tierLabel = { argent: 'Argent · -5% sur l\'addition', or: 'Or · un plat au choix offert' };
   holder.innerHTML = eligible.map(t => {
     const claim = claims.find(c => c.tier === t);
     if(claim){
@@ -1101,6 +1101,7 @@ function closeAccount(){
 }
 
 /* ===================== TABLE RESERVATION ===================== */
+const SEATING_LABELS = { rdc: 'Bar / Restaurant (RDC)', rooftop: 'Rooftop', vip: 'Restaurant VIP' };
 function openReservation(){
   const overlay = document.getElementById('reservationOverlay');
   const box = document.getElementById('reservationBox');
@@ -1117,6 +1118,13 @@ function openReservation(){
     <div class="field"><label>Date</label><input type="date" id="resDate" min="${minDate}"></div>
     <div class="field"><label>Heure</label><input type="time" id="resTime" value="19:00"></div>
     <div class="field"><label>Nombre de convives</label><input type="number" id="resGuests" min="1" max="30" value="2"></div>
+    <div class="field"><label>Où souhaitez-vous vous installer ?</label>
+      <select id="resSeating">
+        <option value="rdc">Bar / Restaurant (RDC)</option>
+        <option value="rooftop">Rooftop</option>
+        <option value="vip">Restaurant VIP</option>
+      </select>
+    </div>
     <div class="lp-error" id="resError"></div>
     <button class="btn-primary" style="width:100%;text-align:center" onclick="submitReservation()">Envoyer la demande</button>
   `;
@@ -1132,6 +1140,7 @@ async function submitReservation(){
   const date = document.getElementById('resDate').value;
   const time = document.getElementById('resTime').value;
   const guests = parseInt(document.getElementById('resGuests').value || '0', 10);
+  const seating = document.getElementById('resSeating').value;
   const err = document.getElementById('resError');
   err.textContent = '';
 
@@ -1147,12 +1156,12 @@ async function submitReservation(){
   try{
     const { error } = await sb.from('reservations').insert({
       id: crypto.randomUUID(), name, phone, email,
-      reservation_time: reservationTime.toISOString(), guests,
+      reservation_time: reservationTime.toISOString(), guests, seating_preference: seating,
     });
     if(error) throw error;
     box.innerHTML = `
       <h3>Demande envoyée !</h3>
-      <p class="account-sub">Nous vous confirmons votre réservation du ${reservationTime.toLocaleDateString('fr-FR')} à ${time} pour ${guests} personne${guests>1?'s':''} par WhatsApp et e-mail sous peu.</p>
+      <p class="account-sub">Nous vous confirmons votre réservation du ${reservationTime.toLocaleDateString('fr-FR')} à ${time} pour ${guests} personne${guests>1?'s':''} (${SEATING_LABELS[seating]}) par WhatsApp et e-mail sous peu.</p>
       <button class="btn-primary" style="width:100%;text-align:center" onclick="closeReservation()">Fermer</button>
     `;
   }catch(e){

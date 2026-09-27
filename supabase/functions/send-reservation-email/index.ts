@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "RESEND_API_KEY not configured" }), { status: 500 });
   }
 
-  const { name, email, date, time, guests } = await req.json();
+  const { name, email, date, time, guests, seating } = await req.json();
   if (!name || !email || !date || !time || !guests) {
     return new Response(JSON.stringify({ error: "missing fields" }), { status: 400 });
   }
@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
             <li>Date : ${date}</li>
             <li>Heure : ${time}</li>
             <li>Convives : ${guests}</li>
+            ${seating ? `<li>Emplacement : ${seating}</li>` : ""}
           </ul>
           <p>Adidogomé Atigangomé - Apédokoè, sur la route non goudronnée en face de la station Sanol, juste à 100 mètres.</p>
           <p>À très bientôt !</p>

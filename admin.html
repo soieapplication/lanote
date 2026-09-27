@@ -541,7 +541,7 @@ function renderReservationsTable(){
   const list = [...(cache.reservations || [])].sort((a,b) => new Date(a.reservation_time) - new Date(b.reservation_time));
   document.getElementById('reservationsTableWrap').innerHTML = `
     <div class="table-wrap"><table>
-      <thead><tr><th>Client</th><th>Téléphone</th><th>E-mail</th><th>Date &amp; heure</th><th>Convives</th><th>Statut</th><th></th></tr></thead>
+      <thead><tr><th>Client</th><th>Téléphone</th><th>E-mail</th><th>Date &amp; heure</th><th>Convives</th><th>Emplacement</th><th>Statut</th><th></th></tr></thead>
       <tbody>
         ${list.map(r => `
           <tr>
@@ -550,15 +550,19 @@ function renderReservationsTable(){
             <td>${r.email}</td>
             <td>${new Date(r.reservation_time).toLocaleString('fr-FR', { dateStyle:'medium', timeStyle:'short' })}</td>
             <td>${r.guests}</td>
+            <td>${seatingLabel(r.seating_preference)}</td>
             <td><span class="badge ${r.status === 'confirmee' ? 'pret' : r.status === 'annulee' ? 'annulee' : 'nouvelle'}">${reservationStatusLabel(r.status)}</span></td>
             <td style="display:flex;gap:8px;flex-wrap:wrap">
               ${r.status === 'en_attente' ? `<button class="btn-sm" onclick="confirmReservation('${r.id}')">Confirmer</button>` : ''}
               ${r.status !== 'annulee' ? `<button class="btn-sm danger" onclick="cancelReservation('${r.id}')">Annuler</button>` : ''}
             </td>
-          </tr>`).join('') || `<tr><td colspan="7" class="empty-state">Aucune réservation.</td></tr>`}
+          </tr>`).join('') || `<tr><td colspan="8" class="empty-state">Aucune réservation.</td></tr>`}
       </tbody>
     </table></div>
   `;
+}
+function seatingLabel(s){
+  return { rdc: 'Bar / Restaurant (RDC)', rooftop: 'Rooftop', vip: 'Restaurant VIP' }[s] || s || '—';
 }
 function reservationStatusLabel(s){
   return { en_attente: 'En attente', confirmee: 'Confirmée', annulee: 'Annulée' }[s] || s;
@@ -580,7 +584,7 @@ async function confirmReservation(id){
       name: r.name, email: r.email,
       date: new Date(r.reservation_time).toLocaleDateString('fr-FR'),
       time: new Date(r.reservation_time).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }),
-      guests: r.guests,
+      guests: r.guests, seating: seatingLabel(r.seating_preference),
     }});
   }catch(e){ /* email function not deployed / offline — WhatsApp still opens below */ }
 
@@ -588,7 +592,7 @@ async function confirmReservation(id){
   // number for the admin to review and send with one click.
   const dateStr = new Date(r.reservation_time).toLocaleDateString('fr-FR');
   const timeStr = new Date(r.reservation_time).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
-  const msg = `Bonjour ${r.name}, votre réservation à La Note Gourmande le ${dateStr} à ${timeStr} pour ${r.guests} personne(s) est confirmée. À bientôt !`;
+  const msg = `Bonjour ${r.name}, votre réservation à La Note Gourmande le ${dateStr} à ${timeStr} pour ${r.guests} personne(s) (${seatingLabel(r.seating_preference)}) est confirmée. À bientôt !`;
   const phoneDigits = r.phone.replace(/[^\d+]/g, '').replace(/^\+/, '');
   window.open(`https://wa.me/${phoneDigits}?text=${encodeURIComponent(msg)}`, '_blank');
 
