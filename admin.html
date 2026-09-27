@@ -46,6 +46,8 @@
   .login-btn:disabled{opacity:.55;cursor:not-allowed}
   .login-error{color:var(--red);font-size:12.5px;margin-top:12px;line-height:1.6;display:none}
   .login-error.show{display:block}
+  .forgot-link{background:none;border:none;color:var(--ink-soft);font-size:12px;cursor:pointer;text-decoration:underline;margin-top:14px;padding:0;display:block;width:100%;text-align:center}
+  .forgot-link:hover{color:var(--orange)}
 
   /* ---- App shell ---- */
   #appScreen{display:none;min-height:100dvh}
@@ -168,6 +170,16 @@
     </div>
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Se connecter</button>
     <div class="login-error" id="loginError"></div>
+    <button class="forgot-link" id="forgotLink" onclick="showForgotPassword()">Mot de passe oublié ?</button>
+    <div id="forgotBox" style="display:none">
+      <div class="field" style="margin-top:14px">
+        <label>Code PIN</label>
+        <input type="text" id="forgotPin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••••">
+      </div>
+      <button class="login-btn" id="forgotBtn" onclick="sendResetEmail()">Envoyer le lien de réinitialisation</button>
+      <div class="login-error" id="forgotError"></div>
+      <button class="forgot-link" onclick="hideForgotPassword()">Retour à la connexion</button>
+    </div>
   </div>
 </div>
 
@@ -212,6 +224,34 @@ function showToast(msg){
 }
 
 /* ===================== AUTH ===================== */
+function showForgotPassword(){
+  document.getElementById('forgotBox').style.display = 'block';
+  document.getElementById('forgotLink').style.display = 'none';
+}
+function hideForgotPassword(){
+  document.getElementById('forgotBox').style.display = 'none';
+  document.getElementById('forgotLink').style.display = 'block';
+}
+async function sendResetEmail(){
+  const pin = document.getElementById('forgotPin').value.trim();
+  const err = document.getElementById('forgotError');
+  const btn = document.getElementById('forgotBtn');
+  err.classList.remove('show'); err.textContent = ''; err.style.color = '';
+  if(!/^\d{6}$/.test(pin)){ err.textContent = 'Veuillez renseigner un code PIN à 6 chiffres.'; err.classList.add('show'); return; }
+  btn.disabled = true; btn.textContent = 'Envoi...';
+
+  const { data: email, error: pinError } = await sb.rpc('get_admin_email', { p_pin: pin });
+  btn.disabled = false; btn.textContent = 'Envoyer le lien de réinitialisation';
+  if(pinError || !email){ err.textContent = 'Code PIN introuvable.'; err.classList.add('show'); return; }
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/reset-password.html',
+  });
+  if(error){ err.textContent = 'Une erreur est survenue. Réessayez.'; err.classList.add('show'); return; }
+  err.style.color = 'var(--green-deep)';
+  err.textContent = 'Un lien de réinitialisation a été envoyé par e-mail.';
+  err.classList.add('show');
+}
 async function doLogin(){
   const pin = document.getElementById('loginPin').value.trim();
   const password = document.getElementById('loginPassword').value;
