@@ -212,6 +212,7 @@
     <div class="sidebar-brand"><img src="assets/iconorange.png"><span>La Note Gourmande</span></div>
     <button class="nav-btn active" data-page="dashboard" onclick="goPage('dashboard')">Tableau de bord</button>
     <button class="nav-btn" data-page="orders" onclick="goPage('orders')">Commandes <span class="nav-badge" id="ordersBadge" hidden></span></button>
+    <button class="nav-btn" data-page="reservations" onclick="goPage('reservations')">Réservations <span class="nav-badge" id="reservationsBadge" hidden></span></button>
     <button class="nav-btn" data-page="items" onclick="goPage('items')">Articles du menu</button>
     <button class="nav-btn" data-page="inventory" onclick="goPage('inventory')">Stock</button>
     <button class="nav-btn" data-page="loyalty" onclick="goPage('loyalty')">Fidélité</button>
@@ -238,7 +239,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let session = null;
 let currentPage = 'dashboard';
-let cache = { orders:[], items:[], categories:[], inventory:[], loyalty:[] };
+let cache = { orders:[], reservations:[], items:[], categories:[], inventory:[], loyalty:[] };
 
 function fmt(n){ return Number(n||0).toLocaleString('fr-FR') + ' F'; }
 function showToast(msg){
@@ -325,6 +326,7 @@ function enterApp(){
   document.getElementById('appScreen').classList.add('show');
   goPage('dashboard');
   refreshPendingBadge();
+  refreshReservationsBadge();
   subscribeToOrders();
   syncNotifBtn();
 }
@@ -338,7 +340,28 @@ function subscribeToOrders(){
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
       onNewOrder(payload.new);
     })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reservations' }, (payload) => {
+      onNewReservation(payload.new);
+    })
     .subscribe();
+}
+
+function onNewReservation(reservation){
+  playChime();
+  showToast(`Nouvelle réservation — ${reservation.name}, ${reservation.guests} pers.`);
+  refreshReservationsBadge();
+  if(currentPage === 'reservations') renderReservations();
+  if(Notification && Notification.permission === 'granted'){
+    const n = new Notification('Nouvelle réservation — La Note Gourmande', {
+      body: `${reservation.name} · ${reservation.guests} pers. · ${new Date(reservation.reservation_time).toLocaleString('fr-FR')}`,
+    });
+    n.onclick = () => { window.focus(); goPage('reservations'); n.close(); };
+  }
+}
+async function refreshReservationsBadge(){
+  const { count } = await sb.from('reservations').select('*', { count:'exact', head:true }).eq('status', 'en_attente');
+  const badge = document.getElementById('reservationsBadge');
+  if(count){ badge.textContent = count; badge.hidden = false; } else { badge.hidden = true; }
 }
 
 function onNewOrder(order){
@@ -395,7 +418,7 @@ async function enableNotifications(){
 function goPage(page){
   currentPage = page;
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === page));
-  const renderers = { dashboard: renderDashboard, orders: renderOrders, items: renderItems, inventory: renderInventory, loyalty: renderLoyaltyAdmin, reports: renderReports };
+  const renderers = { dashboard: renderDashboard, orders: renderOrders, reservations: renderReservations, items: renderItems, inventory: renderInventory, loyalty: renderLoyaltyAdmin, reports: renderReports };
   renderers[page]();
 }
 
@@ -495,6 +518,92 @@ function renderOrdersTable(){
     </table></div>
   `;
 }
+/* ===================== RESERVATIONS ===================== */
+async function renderReservations(){
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="page-head"><div><h2>Réservations</h2><p>Confirmez ou annulez les demandes de table reçues du site.</p></div></div>
+    <div id="reservationsTableWrap">Chargement...</div>
+  `;
+  const { data, error } = await sb.from('reservations').select('*').order('reservation_time');
+  if(error){ document.getElementById('reservationsTableWrap').innerHTML = `<div class="empty-state">Erreur : ${error.message}</div>`; return; }
+  cache.reservations = data || [];
+  renderReservationsTable();
+  updateReservationsBadge();
+}
+function updateReservationsBadge(){
+  const pending = (cache.reservations || []).filter(r => r.status === 'en_attente').length;
+  const badge = document.getElementById('reservationsBadge');
+  badge.hidden = pending === 0;
+  badge.textContent = pending;
+}
+function renderReservationsTable(){
+  const list = [...(cache.reservations || [])].sort((a,b) => new Date(a.reservation_time) - new Date(b.reservation_time));
+  document.getElementById('reservationsTableWrap').innerHTML = `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Client</th><th>Téléphone</th><th>E-mail</th><th>Date &amp; heure</th><th>Convives</th><th>Statut</th><th></th></tr></thead>
+      <tbody>
+        ${list.map(r => `
+          <tr>
+            <td>${r.name}</td>
+            <td>${r.phone}</td>
+            <td>${r.email}</td>
+            <td>${new Date(r.reservation_time).toLocaleString('fr-FR', { dateStyle:'medium', timeStyle:'short' })}</td>
+            <td>${r.guests}</td>
+            <td><span class="badge ${r.status === 'confirmee' ? 'pret' : r.status === 'annulee' ? 'annulee' : 'nouvelle'}">${reservationStatusLabel(r.status)}</span></td>
+            <td style="display:flex;gap:8px;flex-wrap:wrap">
+              ${r.status === 'en_attente' ? `<button class="btn-sm" onclick="confirmReservation('${r.id}')">Confirmer</button>` : ''}
+              ${r.status !== 'annulee' ? `<button class="btn-sm danger" onclick="cancelReservation('${r.id}')">Annuler</button>` : ''}
+            </td>
+          </tr>`).join('') || `<tr><td colspan="7" class="empty-state">Aucune réservation.</td></tr>`}
+      </tbody>
+    </table></div>
+  `;
+}
+function reservationStatusLabel(s){
+  return { en_attente: 'En attente', confirmee: 'Confirmée', annulee: 'Annulée' }[s] || s;
+}
+async function confirmReservation(id){
+  const r = cache.reservations.find(x => x.id === id);
+  if(!r) return;
+  const { error } = await sb.from('reservations').update({ status: 'confirmee' }).eq('id', id);
+  if(error){ showToast('Erreur : ' + error.message); return; }
+  r.status = 'confirmee';
+  renderReservationsTable();
+  updateReservationsBadge();
+
+  // Email: best-effort via the send-reservation-email Edge Function (see
+  // supabase/functions/send-reservation-email). Never blocks the UI if the
+  // function isn't deployed yet.
+  try{
+    await sb.functions.invoke('send-reservation-email', { body: {
+      name: r.name, email: r.email,
+      date: new Date(r.reservation_time).toLocaleDateString('fr-FR'),
+      time: new Date(r.reservation_time).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }),
+      guests: r.guests,
+    }});
+  }catch(e){ /* email function not deployed / offline — WhatsApp still opens below */ }
+
+  // WhatsApp: semi-automatic — opens a pre-filled message to the guest's
+  // number for the admin to review and send with one click.
+  const dateStr = new Date(r.reservation_time).toLocaleDateString('fr-FR');
+  const timeStr = new Date(r.reservation_time).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+  const msg = `Bonjour ${r.name}, votre réservation à La Note Gourmande le ${dateStr} à ${timeStr} pour ${r.guests} personne(s) est confirmée. À bientôt !`;
+  const phoneDigits = r.phone.replace(/[^\d+]/g, '').replace(/^\+/, '');
+  window.open(`https://wa.me/${phoneDigits}?text=${encodeURIComponent(msg)}`, '_blank');
+
+  showToast('Réservation confirmée — e-mail envoyé, message WhatsApp ouvert.');
+}
+async function cancelReservation(id){
+  if(!confirm('Annuler cette réservation ?')) return;
+  const { error } = await sb.from('reservations').update({ status: 'annulee' }).eq('id', id);
+  if(error){ showToast('Erreur : ' + error.message); return; }
+  const r = cache.reservations.find(x => x.id === id); if(r) r.status = 'annulee';
+  renderReservationsTable();
+  updateReservationsBadge();
+  showToast('Réservation annulée.');
+}
+
 async function confirmPayment(id){
   const { data: earned, error } = await sb.rpc('confirm_order_payment', { p_order_id: id });
   if(error){ showToast('Erreur : ' + error.message); return; }

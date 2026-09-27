@@ -311,6 +311,11 @@
     font-weight:700;font-size:12px;cursor:pointer;margin-top:10px;transition:border-color .15s,background .15s;
   }
   .lp-history-btn:hover{border-color:var(--orange);background:rgba(222,99,38,.1)}
+  .claim-btn{border-color:var(--orange);color:var(--orange);margin-bottom:8px}
+  .claim-done{
+    font-size:11px;color:#DCEFE3;background:rgba(32,105,71,.35);border:1px solid rgba(220,239,227,.25);
+    border-radius:9px;padding:9px 11px;margin-bottom:8px;line-height:1.6;
+  }
 
   /* ===== Motion & entrance animations ===== */
   @media (prefers-reduced-motion: no-preference){
@@ -385,11 +390,11 @@
     <p>Composez votre commande, choisissez vos accompagnements et suppléments pour chaque plat, puis envoyez-la directement sur WhatsApp — on s'occupe du reste.</p>
     <div class="hero-ctas">
       <a href="#menu" class="btn-primary">Voir le menu</a>
-      <a href="tel:+22891072125" class="btn-ghost">Réserver une table</a>
+      <button class="btn-ghost" onclick="openReservation()">Réserver une table</button>
     </div>
     <div class="hero-hours-line">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-      <span>Lun–Jeu 18h–00h · Week-end 18h–2h</span>
+      <span>Mar–Jeu 12h–00h · Week-end 12h–3h · Fermé le lundi</span>
     </div>
   </div>
 </section>
@@ -413,6 +418,9 @@
 <div class="account-overlay" id="accountOverlay" onclick="closeAccount()"></div>
 <div class="account-box" id="accountBox"></div>
 
+<div class="account-overlay" id="reservationOverlay" onclick="closeReservation()"></div>
+<div class="account-box" id="reservationBox"></div>
+
 <div class="cat-nav-wrap">
   <div class="cat-nav" id="catNav"></div>
 </div>
@@ -428,13 +436,14 @@
     </div>
     <div>
       <h3>Contact</h3>
-      <p>Adidogomé Apédokoé,<br>en face de la station Sanol</p>
+      <p>Adidogomé Atigangomé - Apédokoè,<br>sur la route non goudronnée en face de la station Sanol,<br>juste à 100 mètres.</p>
+      <p><a href="https://share.google/mL0JowN5GSWYFUH7U" target="_blank" rel="noopener">Voir sur Google Maps</a></p>
       <p><a href="tel:+22891072125">(+228) 91 07 21 25</a></p>
       <p><a href="mailto:lanotegourmande228@gmail.com">lanotegourmande228@gmail.com</a></p>
     </div>
     <div>
       <h3>Horaires</h3>
-      <p>Lundi – Jeudi : 18h00 – 00h00<br>Week-end : 18h00 – 02h00</p>
+      <p>Lundi : Fermé<br>Mardi – Jeudi : 12h00 – 00h00<br>Week-end : 12h00 – 3h00</p>
       <p style="margin-top:10px">La maison n'accepte pas les chèques.<br>Veuillez ne pas payer les factures manuscrites.</p>
     </div>
   </div>
@@ -1011,9 +1020,41 @@ function renderLoyalty(){
     <div class="lp-progress-label">${next ? `${next.min - profile.points} pts avant le niveau ${next.name}` : 'Niveau maximum atteint'}</div>
     <div class="lp-name">${profile.name}</div>
     <div class="lp-code">${profile.code} · ${tier.perk}</div>
+    <div id="lpClaims"></div>
     <button class="lp-history-btn" onclick="openAccount()">Mes commandes</button>
     <button class="lp-logout" onclick="leaveLoyalty()">Changer de carte</button>
   `;
+  renderClaimButtons(profile);
+}
+
+/* ===================== LOYALTY REWARD CLAIMS ===================== */
+async function renderClaimButtons(profile){
+  const holder = document.getElementById('lpClaims');
+  if(!holder || !sb) return;
+  const eligible = ['argent','or'].filter(t => profile.points >= (t === 'argent' ? 500 : 1500));
+  if(!eligible.length){ holder.innerHTML = ''; return; }
+
+  let claims = [];
+  try{
+    const { data } = await sb.rpc('get_loyalty_claims', { p_code: profile.code });
+    claims = data || [];
+  }catch(e){ /* show claim buttons anyway; claim() will catch duplicates */ }
+
+  const tierLabel = { argent: 'Argent · -5% sur l\'addition', or: 'Or · dessert offert + priorité rooftop' };
+  holder.innerHTML = eligible.map(t => {
+    const claim = claims.find(c => c.tier === t);
+    if(claim){
+      return `<div class="claim-done">Récompense ${tierLabel[t]}<br>Code à présenter : <strong>${claim.claim_code}</strong></div>`;
+    }
+    return `<button class="lp-history-btn claim-btn" onclick="claimReward('${profile.code}','${t}')">Réclamer la récompense ${tierLabel[t]}</button>`;
+  }).join('');
+}
+async function claimReward(code, tier){
+  try{
+    const { data, error } = await sb.rpc('claim_loyalty_reward', { p_code: code, p_tier: tier });
+    if(error || !data || !data.length) throw error;
+    renderClaimButtons(loadLoyalty());
+  }catch(e){ /* silently retry render; RPC re-checks eligibility server-side */ }
 }
 
 /* ===================== CLIENT ACCOUNT (order history) ===================== */
@@ -1057,6 +1098,67 @@ function statusLabelFr(s){
 function closeAccount(){
   document.getElementById('accountOverlay').classList.remove('open');
   document.getElementById('accountBox').classList.remove('open');
+}
+
+/* ===================== TABLE RESERVATION ===================== */
+function openReservation(){
+  const overlay = document.getElementById('reservationOverlay');
+  const box = document.getElementById('reservationBox');
+  overlay.classList.add('open'); box.classList.add('open');
+  const profile = loadLoyalty();
+  const now = new Date();
+  const minDate = now.toISOString().slice(0,10);
+  box.innerHTML = `
+    <h3>Réserver une table</h3>
+    <p class="account-sub">Un membre de l'équipe confirmera votre réservation par WhatsApp et e-mail.</p>
+    <div class="field"><label>Nom et prénom</label><input type="text" id="resName" value="${profile?.name || ''}"></div>
+    <div class="field"><label>Téléphone (WhatsApp)</label><input type="tel" id="resPhone" value="${profile?.phone || ''}"></div>
+    <div class="field"><label>E-mail</label><input type="email" id="resEmail"></div>
+    <div class="field"><label>Date</label><input type="date" id="resDate" min="${minDate}"></div>
+    <div class="field"><label>Heure</label><input type="time" id="resTime" value="19:00"></div>
+    <div class="field"><label>Nombre de convives</label><input type="number" id="resGuests" min="1" max="30" value="2"></div>
+    <div class="lp-error" id="resError"></div>
+    <button class="btn-primary" style="width:100%;text-align:center" onclick="submitReservation()">Envoyer la demande</button>
+  `;
+}
+function closeReservation(){
+  document.getElementById('reservationOverlay').classList.remove('open');
+  document.getElementById('reservationBox').classList.remove('open');
+}
+async function submitReservation(){
+  const name = document.getElementById('resName').value.trim();
+  const phone = document.getElementById('resPhone').value.trim();
+  const email = document.getElementById('resEmail').value.trim();
+  const date = document.getElementById('resDate').value;
+  const time = document.getElementById('resTime').value;
+  const guests = parseInt(document.getElementById('resGuests').value || '0', 10);
+  const err = document.getElementById('resError');
+  err.textContent = '';
+
+  if(!name || !phone || !email || !date || !time || !guests){
+    err.textContent = 'Merci de remplir tous les champs.'; return;
+  }
+  if(!sb){ err.textContent = 'Indisponible hors ligne.'; return; }
+
+  const reservationTime = new Date(`${date}T${time}`);
+  const box = document.getElementById('reservationBox');
+  box.querySelector('.btn-primary').disabled = true;
+
+  try{
+    const { error } = await sb.from('reservations').insert({
+      id: crypto.randomUUID(), name, phone, email,
+      reservation_time: reservationTime.toISOString(), guests,
+    });
+    if(error) throw error;
+    box.innerHTML = `
+      <h3>Demande envoyée !</h3>
+      <p class="account-sub">Nous vous confirmons votre réservation du ${reservationTime.toLocaleDateString('fr-FR')} à ${time} pour ${guests} personne${guests>1?'s':''} par WhatsApp et e-mail sous peu.</p>
+      <button class="btn-primary" style="width:100%;text-align:center" onclick="closeReservation()">Fermer</button>
+    `;
+  }catch(e){
+    err.textContent = "Une erreur est survenue. Réessayez ou appelez-nous directement.";
+    box.querySelector('.btn-primary').disabled = false;
+  }
 }
 
 let drawerOpen = false;
